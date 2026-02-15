@@ -1,0 +1,32 @@
+services:
+  database:
+    container_name: slouka-database
+    image: postgres:17-bookworm
+    environment: 
+      POSTGRES_USER: backend
+      POSTGRES_PASSWORD: backendpassword123
+      POSTGRES_DB: backend
+    networks:
+      - slouka-net
+    ports:
+      - 5432:5432
+    volumes:
+      - ./var/postgresql:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U backend"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  bot:
+    container_name: slouka-bot
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    depends_on:
+      - database
+    networks:
+      - slouka-net
+
+networks:
+  slouka-net:
+    driver: bridge
