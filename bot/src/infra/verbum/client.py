@@ -7,7 +7,7 @@ from src.infra.schemas.verbum import VerbumResponse
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_DICT_IDS = ["tsblm2022"]
+DEFAULT_DICT_IDS = ["tsblm2022", "tsbm", "klyshka", "rbs10"]
 
 
 class VerbumClient:

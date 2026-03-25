@@ -104,7 +104,7 @@ async def on_new_search(callback: CallbackQuery, button: Button, manager: Dialog
 
 lookup_dialog = Dialog(
     Window(
-        Const("<b>Пошук слова</b>\n\nУвядзіце беларускае слова для пошуку:"),
+        Const("<b>Пошук слова</b>\n\nУвядзіце слова для пошуку (беларускае ці рускае):"),
         MessageInput(on_word_entered),
         Button(Const("← Назад"), id="back", on_click=on_back_to_menu),
         state=LookupSG.enter_word,

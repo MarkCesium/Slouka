@@ -36,3 +36,4 @@ class ParsedCard(BaseModel):
     phrases: list[str] = []
     raw_html: str
     dictionary_id: str
+    dictionary_name: str | None = None
