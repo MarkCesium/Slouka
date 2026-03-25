@@ -1,6 +1,6 @@
-from .user import User
-from .deck import Deck
-from .card import Card
 from .base import Base
+from .card import Card
+from .deck import Deck
+from .user import User
 
 __all__ = ("User", "Deck", "Card", "Base")

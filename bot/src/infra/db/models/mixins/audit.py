@@ -1,11 +1,12 @@
+from datetime import UTC, datetime
 from typing import Annotated
-from datetime import datetime, timezone
+
 from sqlalchemy import DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 
 def now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 TDateTime = Annotated[

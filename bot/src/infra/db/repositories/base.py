@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Generic, List, Sequence, Type, TypeVar
+from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import Result, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,11 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.infra.db.models import Base
 
 logger = logging.getLogger(__name__)
-T = TypeVar("T", bound=Base)
 
 
-class BaseRepository(Generic[T]):
-    def __init__(self, model: Type[T], session: AsyncSession):
+class BaseRepository[T: Base]:
+    def __init__(self, model: type[T], session: AsyncSession):
         self.model = model
         self.session = session
 
@@ -20,11 +20,11 @@ class BaseRepository(Generic[T]):
 
     async def find(
         self,
-        filters: List[Any] | None = None,
+        filters: list[Any] | None = None,
         order_by: Any | None = None,
         limit: int | None = None,
         offset: int | None = None,
-        load_options: List[Any] | None = None,
+        load_options: list[Any] | None = None,
     ) -> Sequence[T]:
         query = select(self.model)
 
@@ -65,10 +65,7 @@ class BaseRepository(Generic[T]):
 
     async def update(self, id: int, **data: Any) -> T:
         result = await self.session.execute(
-            update(self.model)
-            .where(self.model.id == id)
-            .values(**data)
-            .returning(self.model)
+            update(self.model).where(self.model.id == id).values(**data).returning(self.model)
         )
         updated_entity = result.scalar_one_or_none()
         if not updated_entity:
@@ -84,7 +81,7 @@ class BaseRepository(Generic[T]):
         await self.session.delete(entity)
         await self.session.flush()
 
-    async def count(self, filters: List[Any] | None = None) -> int:
+    async def count(self, filters: list[Any] | None = None) -> int:
         query = select(func.count()).select_from(self.model)
         if filters:
             query = query.where(*filters)

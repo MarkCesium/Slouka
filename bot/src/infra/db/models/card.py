@@ -1,8 +1,8 @@
-from sqlalchemy import Integer, String, ForeignKey, Text, Float, Boolean
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
-from .mixins.audit import TDateTime, AuditMixin
+from .mixins.audit import AuditMixin, TDateTime
 
 
 class Card(Base, AuditMixin):
@@ -15,6 +15,4 @@ class Card(Base, AuditMixin):
     repetitions: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     next_review_date: Mapped[TDateTime]
     is_new: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
-    deck_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("decks.id"), nullable=False
-    )
+    deck_id: Mapped[int] = mapped_column(Integer, ForeignKey("decks.id"), nullable=False)
