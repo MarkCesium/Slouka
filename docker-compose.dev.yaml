@@ -1,0 +1,20 @@
+services:
+  database:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    volumes:
+      - ./bot/src:/bot/src
+      - ./bot/migrations:/bot/migrations
+
+networks:
+  slouka-net:
+    driver: bridge
