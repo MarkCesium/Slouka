@@ -1,4 +1,3 @@
-import logging
 from collections.abc import Sequence
 from typing import Any
 
@@ -6,8 +5,6 @@ from sqlalchemy import Result, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infra.db.models import Base
-
-logger = logging.getLogger(__name__)
 
 
 class BaseRepository[T: Base]:
@@ -37,10 +34,10 @@ class BaseRepository[T: Base]:
         if load_options:
             query = query.options(*load_options)
 
-        if offset:
+        if offset is not None:
             query = query.offset(offset)
 
-        if limit:
+        if limit is not None:
             query = query.limit(limit)
 
         result = await self.session.scalars(query)
@@ -72,14 +69,6 @@ class BaseRepository[T: Base]:
             raise ValueError(f"Entity with id {id} not found")
         await self.session.flush()
         return updated_entity
-
-    async def patch(self, id: int, **data: Any) -> T:
-        filtered_data = {k: v for k, v in data.items() if v is not None}
-        return await self.update(id, **filtered_data)
-
-    async def delete(self, entity: T) -> None:
-        await self.session.delete(entity)
-        await self.session.flush()
 
     async def count(self, filters: list[Any] | None = None) -> int:
         query = select(func.count()).select_from(self.model)
