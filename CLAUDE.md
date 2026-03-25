@@ -28,13 +28,14 @@ src/
 
 - **Unit of Work**: Every service method opens its own `async with self._uow:` block. UoW auto-commits on success, rollbacks on exception. Never pass UoW around without context manager.
 - **Repository pattern**: Generic `BaseRepository[T: Base]` with CRUD. Specific repos extend it (e.g., `CardRepository.get_due_cards`).
-- **DI via Dishka**: Services at REQUEST scope, infra clients at APP scope. Use `container()` context in dialog callbacks to get services.
+- **DI via Dishka**: Services at REQUEST scope, infra clients at APP scope. Dialog callbacks use `@inject` decorator + `FromDishka[ServiceType]` parameter annotation.
 - **No DTOs**: Pydantic schemas in `infra/schemas/` are used directly everywhere. Serialize with `.model_dump()` for dialog_data.
 
 ### Telegram Layer (aiogram + aiogram-dialog)
 
 - All dialog states in `infra/tg/dialogs/states.py`
-- Dialog callbacks get services via `manager.middleware_data["dishka_container"]`
+- Shared dialog helpers (navigation, predicates, callback factories) live in `infra/tg/dialogs/common.py`
+- Dialog callbacks get services via `@inject` + `FromDishka[ServiceType]` (dishka-aiogram-dialog integration)
 - `UserMiddleware` auto-registers users on every update
 - FSM storage: Redis (requires `DefaultKeyBuilder(with_destiny=True)` for aiogram-dialog compatibility)
 - Onboarding is mandatory — checked via `User.onboarding_completed` field
@@ -43,9 +44,10 @@ src/
 
 - Endpoint: `GET {VERBUM_URL}/search?q={word}&in={dict_ids}&page=1`
 - Returns JSON with `Articles[]`, each containing HTML in `Content` field
-- We use `tsblm2022` dictionary only (Belarusian explanatory)
-- HTML parser (`infra/verbum/parser.py`) extracts: headword, accent, POS, definitions, examples, phrases
-- Parser skips: `<table>` (grammar tables), `<highlight>` (search markers), `<strong class="hw-alt">` (feminine forms), content after `||` separator
+- Dictionaries (priority order): `tsblm2022` (explanatory 2022), `tsbm` (explanatory 1977-84), `klyshka` (synonyms), `rbs10` (Russian-Belarusian)
+- Each dictionary has its own parser class in `infra/verbum/parser.py`; common post-processing in `VerbumParser._build_card()`
+- `VerbumService.search_word()` filters results by headword match and sorts by dictionary priority
+- Explanatory parser skips: `<table>` (grammar tables), `<highlight>` (search markers), `<strong class="hw-alt">` (feminine forms), content after `||` separator
 
 ### Card Deduplication
 
@@ -57,6 +59,7 @@ Cards are unique per `(deck_id, word)`. `CardService.create_card` returns `None`
 - PostgreSQL 17, Redis (FSM storage)
 - uv for dependency management, ruff for linting, mypy (strict) for type checking
 - Docker Compose with base + dev overlay pattern
+- GitHub Actions CI: ruff check + ruff format + mypy on push/PR to main
 
 ## Commands
 
