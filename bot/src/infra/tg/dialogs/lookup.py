@@ -13,6 +13,7 @@ from src.infra.schemas.verbum import ParsedCard
 from src.infra.verbum.parser import format_card_for_telegram
 from src.services.verbum import VerbumService
 
+from .common import get_dialog_data
 from .states import CardDisplaySG, LookupSG, MainMenuSG
 
 logger = logging.getLogger(__name__)
@@ -37,20 +38,26 @@ async def on_word_entered(
         await message.answer(f"Не знойдзена вынікаў для <b>{word}</b>. Паспрабуйце іншае слова.")
         return
 
-    manager.dialog_data["cards"] = [c.model_dump() for c in cards]
-    manager.dialog_data["current_index"] = 0
-    manager.dialog_data["query"] = word
+    data = get_dialog_data(manager)
+    data["cards"] = [c.model_dump() for c in cards]
+    data["current_index"] = 0
+    data["query"] = word
 
     await manager.switch_to(LookupSG.results)
 
 
 async def results_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
-    cards_data = dialog_manager.dialog_data.get("cards", [])
-    index = dialog_manager.dialog_data.get("current_index", 0)
-    query = dialog_manager.dialog_data.get("query", "")
+    data = get_dialog_data(dialog_manager)
+    cards_data: list[dict[str, Any]] = data.get("cards", [])
+    index: int = data.get("current_index", 0)
+    query: str = data.get("query", "")
 
     if not cards_data:
-        return {"card_text": "Не знойдзена вынікаў.", "nav_info": "", "query": query}
+        return {
+            "card_text": "Не знойдзена вынікаў.",
+            "nav_info": "",
+            "query": query,
+        }
 
     card = ParsedCard.model_validate(cards_data[index])
     card_text = format_card_for_telegram(card)
@@ -67,21 +74,24 @@ async def results_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[s
 
 
 async def on_prev(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    index = manager.dialog_data.get("current_index", 0)
+    data = get_dialog_data(manager)
+    index: int = data.get("current_index", 0)
     if index > 0:
-        manager.dialog_data["current_index"] = index - 1
+        data["current_index"] = index - 1
 
 
 async def on_next(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    cards = manager.dialog_data.get("cards", [])
-    index = manager.dialog_data.get("current_index", 0)
+    data = get_dialog_data(manager)
+    cards: list[Any] = data.get("cards", [])
+    index: int = data.get("current_index", 0)
     if index < len(cards) - 1:
-        manager.dialog_data["current_index"] = index + 1
+        data["current_index"] = index + 1
 
 
 async def on_add_to_deck(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    cards_data = manager.dialog_data.get("cards", [])
-    index = manager.dialog_data.get("current_index", 0)
+    data = get_dialog_data(manager)
+    cards_data: list[dict[str, Any]] = data.get("cards", [])
+    index: int = data.get("current_index", 0)
 
     if cards_data:
         await manager.start(
@@ -91,7 +101,7 @@ async def on_add_to_deck(callback: CallbackQuery, button: Button, manager: Dialo
 
 
 async def on_new_search(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    manager.dialog_data.clear()
+    get_dialog_data(manager).clear()
     await manager.switch_to(LookupSG.enter_word)
 
 
@@ -111,12 +121,34 @@ lookup_dialog = Dialog(
         Format("\n{nav_info}", when="nav_info"),
         Group(
             Row(
-                Button(Const("← Папярэдні"), id="prev", on_click=on_prev, when="has_prev"),
-                Button(Const("Наступны →"), id="next", on_click=on_next, when="has_next"),
+                Button(
+                    Const("← Папярэдні"),
+                    id="prev",
+                    on_click=on_prev,
+                    when="has_prev",
+                ),
+                Button(
+                    Const("Наступны →"),
+                    id="next",
+                    on_click=on_next,
+                    when="has_next",
+                ),
             ),
-            Button(Const("📥 Дадаць да калодкі"), id="add", on_click=on_add_to_deck),
-            Button(Const("🔍 Новы пошук"), id="new_search", on_click=on_new_search),
-            Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
+            Button(
+                Const("📥 Дадаць да калодкі"),
+                id="add",
+                on_click=on_add_to_deck,
+            ),
+            Button(
+                Const("🔍 Новы пошук"),
+                id="new_search",
+                on_click=on_new_search,
+            ),
+            Button(
+                Const("← Меню"),
+                id="menu",
+                on_click=on_back_to_menu,
+            ),
         ),
         state=LookupSG.results,
         getter=results_getter,

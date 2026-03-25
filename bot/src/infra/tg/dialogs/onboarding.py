@@ -7,6 +7,7 @@ from dishka.integrations.aiogram_dialog import inject
 
 from src.services.user import UserService
 
+from .common import get_user
 from .states import MainMenuSG, OnboardingSG
 
 
@@ -17,7 +18,7 @@ async def on_finish_onboarding(
     manager: DialogManager,
     user_service: FromDishka[UserService],
 ) -> None:
-    user = manager.middleware_data.get("user")
+    user = get_user(manager)
     if user:
         await user_service.complete_onboarding(user.id)
 

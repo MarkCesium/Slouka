@@ -11,6 +11,7 @@ from dishka.integrations.aiogram_dialog import inject
 from src.services.card import CardService
 from src.services.deck import DeckService
 
+from .common import get_dialog_data, get_start_data, get_user
 from .states import MainMenuSG, ReviewSG
 
 logger = logging.getLogger(__name__)
@@ -18,14 +19,16 @@ logger = logging.getLogger(__name__)
 
 @inject
 async def select_deck_getter(
-    dialog_manager: DialogManager, deck_service: FromDishka[DeckService], **kwargs: Any
+    dialog_manager: DialogManager,
+    deck_service: FromDishka[DeckService],
+    **kwargs: Any,
 ) -> dict[str, Any]:
-    user = dialog_manager.middleware_data.get("user")
+    user = get_user(dialog_manager)
     if not user:
         return {"decks": [], "has_decks": False}
 
     decks = await deck_service.get_user_decks(user.id)
-    deck_items = []
+    deck_items: list[tuple[str, str]] = []
     for d in decks:
         stats = await deck_service.get_deck_stats(d.id)
         due_count = stats["due"] + stats["new"]
@@ -45,10 +48,11 @@ async def on_review_deck_selected(
     card_service: FromDishka[CardService],
 ) -> None:
     deck_id = int(item_id)
-    manager.dialog_data["deck_id"] = deck_id
+    data = get_dialog_data(manager)
+    data["deck_id"] = deck_id
     await _load_review_cards(manager, card_service, deck_id)
 
-    if manager.dialog_data.get("card_ids"):
+    if data.get("card_ids"):
         await manager.switch_to(ReviewSG.show_front)
     else:
         await callback.answer("Няма картак для практыкі ў гэтай калодцы.")
@@ -58,18 +62,20 @@ async def _load_review_cards(
     manager: DialogManager, card_service: CardService, deck_id: int
 ) -> None:
     cards = await card_service.get_due_cards(deck_id)
+    data = get_dialog_data(manager)
 
-    manager.dialog_data["card_ids"] = [c.id for c in cards]
-    manager.dialog_data["card_index"] = 0
-    manager.dialog_data["reviewed_count"] = 0
-    manager.dialog_data["total_count"] = len(cards)
+    data["card_ids"] = [c.id for c in cards]
+    data["card_index"] = 0
+    data["reviewed_count"] = 0
+    data["total_count"] = len(cards)
 
 
 async def _get_current_card(
     manager: DialogManager, card_service: CardService
 ) -> dict[str, Any] | None:
-    card_ids = manager.dialog_data.get("card_ids", [])
-    index = manager.dialog_data.get("card_index", 0)
+    data = get_dialog_data(manager)
+    card_ids: list[int] = data.get("card_ids", [])
+    index: int = data.get("card_index", 0)
 
     if index >= len(card_ids):
         return None
@@ -90,20 +96,23 @@ async def _get_current_card(
 
 @inject
 async def front_getter(
-    dialog_manager: DialogManager, card_service: FromDishka[CardService], **kwargs: Any
+    dialog_manager: DialogManager,
+    card_service: FromDishka[CardService],
+    **kwargs: Any,
 ) -> dict[str, Any]:
-    start_data = dialog_manager.start_data
-    if not dialog_manager.dialog_data.get("card_ids") and isinstance(start_data, dict):
-        deck_id = start_data.get("deck_id")
-        if deck_id:
+    data = get_dialog_data(dialog_manager)
+    start = get_start_data(dialog_manager)
+    if not data.get("card_ids") and start:
+        deck_id: int | None = start.get("deck_id")
+        if deck_id is not None:
             await _load_review_cards(dialog_manager, card_service, deck_id)
 
     card = await _get_current_card(dialog_manager, card_service)
     if not card:
         return {"word": "Няма картак для практыкі.", "progress": ""}
 
-    total = dialog_manager.dialog_data.get("total_count", 0)
-    reviewed = dialog_manager.dialog_data.get("reviewed_count", 0)
+    total: int = data.get("total_count", 0)
+    reviewed: int = data.get("reviewed_count", 0)
 
     return {
         "word": card["word"],
@@ -113,13 +122,15 @@ async def front_getter(
 
 @inject
 async def back_getter(
-    dialog_manager: DialogManager, card_service: FromDishka[CardService], **kwargs: Any
+    dialog_manager: DialogManager,
+    card_service: FromDishka[CardService],
+    **kwargs: Any,
 ) -> dict[str, Any]:
     card = await _get_current_card(dialog_manager, card_service)
     if not card:
         return {"word": "", "definition": "", "examples": ""}
 
-    examples = card.get("examples") or ""
+    examples: str = card.get("examples") or ""
 
     return {
         "word": card["word"],
@@ -137,17 +148,18 @@ async def _rate_card(
     card_service: CardService,
     quality: int,
 ) -> None:
-    card_ids = manager.dialog_data.get("card_ids", [])
-    index = manager.dialog_data.get("card_index", 0)
+    data = get_dialog_data(manager)
+    card_ids: list[int] = data.get("card_ids", [])
+    index: int = data.get("card_index", 0)
 
     if index < len(card_ids):
         card_id = card_ids[index]
         await card_service.review_card(card_id, quality)
 
-    manager.dialog_data["card_index"] = index + 1
-    manager.dialog_data["reviewed_count"] = manager.dialog_data.get("reviewed_count", 0) + 1
+    data["card_index"] = index + 1
+    data["reviewed_count"] = int(data.get("reviewed_count", 0)) + 1
 
-    if manager.dialog_data["card_index"] >= len(card_ids):
+    if data["card_index"] >= len(card_ids):
         await manager.switch_to(ReviewSG.session_complete)
     else:
         await manager.switch_to(ReviewSG.show_front)
@@ -194,12 +206,17 @@ async def on_easy(
 
 
 async def complete_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
-    reviewed = dialog_manager.dialog_data.get("reviewed_count", 0)
+    data = get_dialog_data(dialog_manager)
+    reviewed: int = data.get("reviewed_count", 0)
     return {"reviewed": reviewed}
 
 
 async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
     await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK)
+
+
+def _no_decks(data: dict[str, Any], *_: Any) -> bool:
+    return not data.get("has_decks")
 
 
 review_dialog = Dialog(
@@ -214,7 +231,7 @@ review_dialog = Dialog(
         ),
         Const(
             "\nНяма калодак з карткамі для практыкі.",
-            when=lambda data, *_: not data.get("has_decks"),
+            when=_no_decks,
         ),
         Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
         state=ReviewSG.select_deck,

@@ -13,6 +13,7 @@ from src.infra.schemas.verbum import ParsedCard
 from src.services.card import CardService
 from src.services.deck import DeckService
 
+from .common import get_dialog_data, get_start_data, get_user
 from .states import CardDisplaySG, MainMenuSG
 
 logger = logging.getLogger(__name__)
@@ -20,9 +21,11 @@ logger = logging.getLogger(__name__)
 
 @inject
 async def decks_getter(
-    dialog_manager: DialogManager, deck_service: FromDishka[DeckService], **kwargs: Any
+    dialog_manager: DialogManager,
+    deck_service: FromDishka[DeckService],
+    **kwargs: Any,
 ) -> dict[str, Any]:
-    user = dialog_manager.middleware_data.get("user")
+    user = get_user(dialog_manager)
     if not user:
         return {"decks": [], "has_decks": False}
 
@@ -43,8 +46,8 @@ async def on_deck_selected(
     card_service: FromDishka[CardService],
 ) -> None:
     deck_id = int(item_id)
-    start_data = manager.start_data or {}
-    card_data = start_data.get("parsed_card", {}) if isinstance(start_data, dict) else {}
+    start = get_start_data(manager)
+    card_data: dict[str, Any] = start.get("parsed_card", {})
 
     if not card_data:
         await callback.answer("Памылка: няма даных карткі.")
@@ -54,10 +57,14 @@ async def on_deck_selected(
     result = await card_service.create_card(deck_id, parsed_card)
 
     if result is None:
-        await callback.answer("Гэтае слова ўжо ёсць у гэтай калодке!", show_alert=True)
+        await callback.answer(
+            "Гэтае слова ўжо ёсць у гэтай калодке!",
+            show_alert=True,
+        )
         return
 
-    manager.dialog_data["added_word"] = parsed_card.headword
+    data = get_dialog_data(manager)
+    data["added_word"] = parsed_card.headword
     await manager.switch_to(CardDisplaySG.added)
 
 
@@ -73,7 +80,7 @@ async def on_create_deck_name(
         await message.answer("Калі ласка, увядзіце назву калодкі.")
         return
 
-    user = manager.middleware_data.get("user")
+    user = get_user(manager)
     if not user:
         return
 
@@ -82,7 +89,8 @@ async def on_create_deck_name(
 
 
 async def added_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
-    word = dialog_manager.dialog_data.get("added_word", "")
+    data = get_dialog_data(dialog_manager)
+    word: str = data.get("added_word", "")
     return {"word": word}
 
 
@@ -92,6 +100,10 @@ async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: Dial
 
 async def on_done(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
     await manager.done()
+
+
+def _no_decks(data: dict[str, Any], *_: Any) -> bool:
+    return not data.get("has_decks")
 
 
 card_display_dialog = Dialog(
@@ -105,9 +117,14 @@ card_display_dialog = Dialog(
             on_click=on_deck_selected,  # pyright: ignore[reportArgumentType]
         ),
         Const(
-            "\nЯшчэ няма калодак. Стварыце новую!", when=lambda data, *_: not data.get("has_decks")
+            "\nЯшчэ няма калодак. Стварыце новую!",
+            when=_no_decks,
         ),
-        SwitchTo(Const("➕ Стварыць калодку"), id="create", state=CardDisplaySG.create_deck),
+        SwitchTo(
+            Const("➕ Стварыць калодку"),
+            id="create",
+            state=CardDisplaySG.create_deck,
+        ),
         Button(Const("← Назад"), id="back", on_click=on_done),
         state=CardDisplaySG.select_deck,
         getter=decks_getter,
@@ -115,13 +132,21 @@ card_display_dialog = Dialog(
     Window(
         Const("<b>Стварыць новую калодку</b>\n\nУвядзіце назву калодкі:"),
         MessageInput(on_create_deck_name),
-        SwitchTo(Const("← Назад"), id="back", state=CardDisplaySG.select_deck),
+        SwitchTo(
+            Const("← Назад"),
+            id="back",
+            state=CardDisplaySG.select_deck,
+        ),
         state=CardDisplaySG.create_deck,
     ),
     Window(
         Format("Картка <b>{word}</b> дададзена да калодкі!"),
         Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
-        Button(Const("← Назад да вынікаў"), id="back_results", on_click=on_done),
+        Button(
+            Const("← Назад да вынікаў"),
+            id="back_results",
+            on_click=on_done,
+        ),
         state=CardDisplaySG.added,
         getter=added_getter,
     ),
