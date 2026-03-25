@@ -20,6 +20,10 @@ src/
 └── dependencies/   # Dishka DI providers
 ```
 
+### Core Layer Rules
+
+`core/` contains implementation-independent logic: config, algorithms (SM2), enums, constants, shared types. If it doesn't depend on any external library or infrastructure — it belongs in core.
+
 ### Key Patterns
 
 - **Unit of Work**: Every service method opens its own `async with self._uow:` block. UoW auto-commits on success, rollbacks on exception. Never pass UoW around without context manager.

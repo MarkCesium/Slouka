@@ -1,10 +1,10 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
+from src.core.sm2 import SM2Service
 from src.infra.db.models import Card
 from src.infra.db.uow import UnitOfWork
 from src.infra.schemas.verbum import ParsedCard
-from src.services.sm2 import SM2Service
 
 
 class CardService:

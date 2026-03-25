@@ -4,12 +4,12 @@ import aiohttp
 from dishka import Provider, Scope, provide
 
 from src.core.config import Settings
+from src.core.sm2 import SM2Service
 from src.infra.db.uow import UnitOfWork
 from src.infra.verbum.client import VerbumClient
 from src.infra.verbum.parser import VerbumParser
 from src.services.card import CardService
 from src.services.deck import DeckService
-from src.services.sm2 import SM2Service
 from src.services.user import UserService
 from src.services.verbum import VerbumService
 
