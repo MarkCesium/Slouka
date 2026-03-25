@@ -11,7 +11,6 @@ DICTIONARY_NAMES: dict[str, str] = {
     "tsbm": "Тлумачальны слоўнік (1977-84)",
     "klyshka": "Слоўнік сінонімаў",
     "rbs10": "Руска-беларускі слоўнік",
-    "rus-bel": "Руска-беларускі слоўнік",
 }
 
 DICTIONARY_PRIORITY: dict[str, int] = {
@@ -19,7 +18,6 @@ DICTIONARY_PRIORITY: dict[str, int] = {
     "tsbm": 1,
     "klyshka": 2,
     "rbs10": 3,
-    "rus-bel": 4,
 }
 
 
