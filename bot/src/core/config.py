@@ -44,10 +44,8 @@ class VerbumConfig(BaseModel):
     url: str = Field(...)
 
 
-class AiConfig(BaseModel):
-    api_key: str = Field(...)
-    base_url: str = Field(...)
-    model: str = Field(...)
+class RedisConfig(BaseModel):
+    url: str = Field(...)
 
 
 class Settings(BaseSettings):
@@ -55,7 +53,7 @@ class Settings(BaseSettings):
     telegram: TelegramConfig = Field(...)
     verbum: VerbumConfig = Field(...)
     database: PostgresConfig = Field(...)
-    ai: AiConfig = Field(...)
+    redis: RedisConfig = Field(...)
 
     class Config:
         env_file = BASE_DIR / ".env"
