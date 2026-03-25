@@ -50,5 +50,6 @@ strict = true
 [dependency-groups]
 dev = [
     "mypy>=1.19.1",
+    "pyright>=1.1.408",
     "ruff>=0.15.7",
 ]

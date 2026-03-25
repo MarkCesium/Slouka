@@ -102,7 +102,7 @@ card_display_dialog = Dialog(
             id="deck_select",
             item_id_getter=lambda item: item[1],
             items="decks",
-            on_click=on_deck_selected,
+            on_click=on_deck_selected,  # pyright: ignore[reportArgumentType]
         ),
         Const(
             "\nЯшчэ няма калодак. Стварыце новую!", when=lambda data, *_: not data.get("has_decks")
