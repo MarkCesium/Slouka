@@ -8,9 +8,7 @@ from src.infra.db import DatabaseHelper, UnitOfWork
 
 class DBProvider(Provider):
     @provide(scope=Scope.APP)
-    async def provide_db_helper(
-        self, settings: Settings
-    ) -> AsyncGenerator[DatabaseHelper, None]:
+    async def provide_db_helper(self, settings: Settings) -> AsyncGenerator[DatabaseHelper]:
         db_helper = DatabaseHelper(settings.database)
         yield db_helper
         await db_helper.dispose()
