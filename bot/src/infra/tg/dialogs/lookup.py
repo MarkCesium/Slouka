@@ -6,8 +6,10 @@ from aiogram_dialog import Dialog, DialogManager, StartMode, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Group, Row
 from aiogram_dialog.widgets.text import Const, Format
-from dishka import AsyncContainer
+from dishka import FromDishka
+from dishka.integrations.aiogram_dialog import inject
 
+from src.infra.schemas.verbum import ParsedCard
 from src.infra.verbum.parser import format_card_for_telegram
 from src.services.verbum import VerbumService
 
@@ -16,18 +18,20 @@ from .states import CardDisplaySG, LookupSG, MainMenuSG
 logger = logging.getLogger(__name__)
 
 
-async def on_word_entered(message: Message, widget: MessageInput, manager: DialogManager) -> None:
+@inject
+async def on_word_entered(
+    message: Message,
+    widget: MessageInput,
+    manager: DialogManager,
+    verbum_service: FromDishka[VerbumService],
+) -> None:
     word = message.text
     if not word or not word.strip():
         await message.answer("Please enter a word.")
         return
 
     word = word.strip()
-    container: AsyncContainer = manager.middleware_data["dishka_container"]
-
-    async with container() as request_container:
-        verbum_service = await request_container.get(VerbumService)
-        cards = await verbum_service.search_word(word)
+    cards = await verbum_service.search_word(word)
 
     if not cards:
         await message.answer(f"No results found for <b>{word}</b>. Try another word.")
@@ -47,8 +51,6 @@ async def results_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[s
 
     if not cards_data:
         return {"card_text": "No results.", "nav_info": "", "query": query}
-
-    from src.infra.schemas.verbum import ParsedCard
 
     card = ParsedCard.model_validate(cards_data[index])
     card_text = format_card_for_telegram(card)

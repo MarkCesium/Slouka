@@ -63,12 +63,7 @@ class _ArticleHTMLParser(HTMLParser):
         elif tag == "strong" and "phr" in cls:
             self._in_phrase = True
             self._phrase_buf = []
-        elif (
-            tag == "strong"
-            and not self._in_hw
-            and not self._in_hw_alt
-            and not self._in_phrase
-        ):
+        elif tag == "strong" and not self._in_hw and not self._in_hw_alt and not self._in_phrase:
             self._in_def_number = True
         elif tag == "span" and "accent" in cls:
             self._in_accent = True

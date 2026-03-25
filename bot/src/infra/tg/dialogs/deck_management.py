@@ -6,7 +6,8 @@ from aiogram_dialog import Dialog, DialogManager, StartMode, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
-from dishka import AsyncContainer
+from dishka import FromDishka
+from dishka.integrations.aiogram_dialog import inject
 
 from src.services.deck import DeckService
 
@@ -15,37 +16,36 @@ from .states import DeckManagementSG, MainMenuSG, ReviewSG
 logger = logging.getLogger(__name__)
 
 
-async def decks_list_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
+@inject
+async def decks_list_getter(
+    dialog_manager: DialogManager, deck_service: FromDishka[DeckService], **kwargs: Any
+) -> dict[str, Any]:
     user = dialog_manager.middleware_data.get("user")
     if not user:
         return {"decks": [], "has_decks": False}
 
-    container: AsyncContainer = dialog_manager.middleware_data["dishka_container"]
-    async with container() as request_container:
-        deck_service = await request_container.get(DeckService)
-        decks = await deck_service.get_user_decks(user.id)
-        deck_items = []
-        for d in decks:
-            stats = await deck_service.get_deck_stats(d.id)
-            label = f"{d.name} ({stats['total']} cards, {stats['due']} due)"
-            deck_items.append((label, str(d.id)))
+    decks = await deck_service.get_user_decks(user.id)
+    deck_items = []
+    for d in decks:
+        stats = await deck_service.get_deck_stats(d.id)
+        label = f"{d.name} ({stats['total']} cards, {stats['due']} due)"
+        deck_items.append((label, str(d.id)))
 
     return {"decks": deck_items, "has_decks": len(deck_items) > 0}
 
 
+@inject
 async def on_deck_selected(
     callback: CallbackQuery,
     widget: Select[Any],
     manager: DialogManager,
     item_id: str,
+    deck_service: FromDishka[DeckService],
 ) -> None:
     deck_id = int(item_id)
     manager.dialog_data["selected_deck_id"] = deck_id
 
-    container: AsyncContainer = manager.middleware_data["dishka_container"]
-    async with container() as request_container:
-        deck_service = await request_container.get(DeckService)
-        stats = await deck_service.get_deck_stats(deck_id)
+    stats = await deck_service.get_deck_stats(deck_id)
 
     manager.dialog_data["deck_stats"] = stats
     await manager.switch_to(DeckManagementSG.view_deck)
@@ -61,8 +61,12 @@ async def deck_view_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict
     }
 
 
+@inject
 async def on_create_deck_name(
-    message: Message, widget: MessageInput, manager: DialogManager
+    message: Message,
+    widget: MessageInput,
+    manager: DialogManager,
+    deck_service: FromDishka[DeckService],
 ) -> None:
     name = message.text
     if not name or not name.strip():
@@ -73,11 +77,7 @@ async def on_create_deck_name(
     if not user:
         return
 
-    container: AsyncContainer = manager.middleware_data["dishka_container"]
-    async with container() as request_container:
-        deck_service = await request_container.get(DeckService)
-        await deck_service.create_deck(user.id, name.strip())
-
+    await deck_service.create_deck(user.id, name.strip())
     await manager.switch_to(DeckManagementSG.list_decks)
 
 

@@ -6,7 +6,8 @@ from aiogram_dialog import Dialog, DialogManager, StartMode, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
-from dishka import AsyncContainer
+from dishka import FromDishka
+from dishka.integrations.aiogram_dialog import inject
 
 from src.infra.schemas.verbum import ParsedCard
 from src.services.card import CardService
@@ -17,15 +18,15 @@ from .states import CardDisplaySG, MainMenuSG
 logger = logging.getLogger(__name__)
 
 
-async def decks_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
+@inject
+async def decks_getter(
+    dialog_manager: DialogManager, deck_service: FromDishka[DeckService], **kwargs: Any
+) -> dict[str, Any]:
     user = dialog_manager.middleware_data.get("user")
     if not user:
         return {"decks": [], "has_decks": False}
 
-    container: AsyncContainer = dialog_manager.middleware_data["dishka_container"]
-    async with container() as request_container:
-        deck_service = await request_container.get(DeckService)
-        decks = await deck_service.get_user_decks(user.id)
+    decks = await deck_service.get_user_decks(user.id)
 
     return {
         "decks": [(d.name, str(d.id)) for d in decks],
@@ -33,11 +34,13 @@ async def decks_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str
     }
 
 
+@inject
 async def on_deck_selected(
     callback: CallbackQuery,
     widget: Select[Any],
     manager: DialogManager,
     item_id: str,
+    card_service: FromDishka[CardService],
 ) -> None:
     deck_id = int(item_id)
     start_data = manager.start_data or {}
@@ -48,11 +51,7 @@ async def on_deck_selected(
         return
 
     parsed_card = ParsedCard.model_validate(card_data)
-
-    container: AsyncContainer = manager.middleware_data["dishka_container"]
-    async with container() as request_container:
-        card_service = await request_container.get(CardService)
-        result = await card_service.create_card(deck_id, parsed_card)
+    result = await card_service.create_card(deck_id, parsed_card)
 
     if result is None:
         await callback.answer("This word is already in this deck!", show_alert=True)
@@ -62,8 +61,12 @@ async def on_deck_selected(
     await manager.switch_to(CardDisplaySG.added)
 
 
+@inject
 async def on_create_deck_name(
-    message: Message, widget: MessageInput, manager: DialogManager
+    message: Message,
+    widget: MessageInput,
+    manager: DialogManager,
+    deck_service: FromDishka[DeckService],
 ) -> None:
     name = message.text
     if not name or not name.strip():
@@ -74,11 +77,7 @@ async def on_create_deck_name(
     if not user:
         return
 
-    container: AsyncContainer = manager.middleware_data["dishka_container"]
-    async with container() as request_container:
-        deck_service = await request_container.get(DeckService)
-        await deck_service.create_deck(user.id, name.strip())
-
+    await deck_service.create_deck(user.id, name.strip())
     await manager.switch_to(CardDisplaySG.select_deck)
 
 
@@ -87,9 +86,7 @@ async def added_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str
     return {"word": word}
 
 
-async def on_back_to_menu(
-    callback: CallbackQuery, button: Button, manager: DialogManager
-) -> None:
+async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
     await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK)
 
 
@@ -108,9 +105,7 @@ card_display_dialog = Dialog(
             on_click=on_deck_selected,
         ),
         Const("\nNo decks yet. Create one!", when=lambda data, *_: not data.get("has_decks")),
-        SwitchTo(
-            Const("➕ Create Deck"), id="create", state=CardDisplaySG.create_deck
-        ),
+        SwitchTo(Const("➕ Create Deck"), id="create", state=CardDisplaySG.create_deck),
         Button(Const("← Back"), id="back", on_click=on_done),
         state=CardDisplaySG.select_deck,
         getter=decks_getter,
