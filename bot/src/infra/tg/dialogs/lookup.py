@@ -1,0 +1,123 @@
+import logging
+from typing import Any
+
+from aiogram.types import CallbackQuery, Message
+from aiogram_dialog import Dialog, DialogManager, StartMode, Window
+from aiogram_dialog.widgets.input import MessageInput
+from aiogram_dialog.widgets.kbd import Button, Group, Row
+from aiogram_dialog.widgets.text import Const, Format
+from dishka import AsyncContainer
+
+from src.infra.verbum.parser import format_card_for_telegram
+from src.services.verbum import VerbumService
+
+from .states import CardDisplaySG, LookupSG, MainMenuSG
+
+logger = logging.getLogger(__name__)
+
+
+async def on_word_entered(message: Message, widget: MessageInput, manager: DialogManager) -> None:
+    word = message.text
+    if not word or not word.strip():
+        await message.answer("Please enter a word.")
+        return
+
+    word = word.strip()
+    container: AsyncContainer = manager.middleware_data["dishka_container"]
+
+    async with container() as request_container:
+        verbum_service = await request_container.get(VerbumService)
+        cards = await verbum_service.search_word(word)
+
+    if not cards:
+        await message.answer(f"No results found for <b>{word}</b>. Try another word.")
+        return
+
+    manager.dialog_data["cards"] = [c.model_dump() for c in cards]
+    manager.dialog_data["current_index"] = 0
+    manager.dialog_data["query"] = word
+
+    await manager.switch_to(LookupSG.results)
+
+
+async def results_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
+    cards_data = dialog_manager.dialog_data.get("cards", [])
+    index = dialog_manager.dialog_data.get("current_index", 0)
+    query = dialog_manager.dialog_data.get("query", "")
+
+    if not cards_data:
+        return {"card_text": "No results.", "nav_info": "", "query": query}
+
+    from src.infra.schemas.verbum import ParsedCard
+
+    card = ParsedCard.model_validate(cards_data[index])
+    card_text = format_card_for_telegram(card)
+    total = len(cards_data)
+    nav_info = f"Result {index + 1} of {total}" if total > 1 else ""
+
+    return {
+        "card_text": card_text,
+        "nav_info": nav_info,
+        "query": query,
+        "has_prev": index > 0,
+        "has_next": index < total - 1,
+    }
+
+
+async def on_prev(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
+    index = manager.dialog_data.get("current_index", 0)
+    if index > 0:
+        manager.dialog_data["current_index"] = index - 1
+
+
+async def on_next(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
+    cards = manager.dialog_data.get("cards", [])
+    index = manager.dialog_data.get("current_index", 0)
+    if index < len(cards) - 1:
+        manager.dialog_data["current_index"] = index + 1
+
+
+async def on_add_to_deck(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
+    cards_data = manager.dialog_data.get("cards", [])
+    index = manager.dialog_data.get("current_index", 0)
+
+    if cards_data:
+        await manager.start(
+            CardDisplaySG.select_deck,
+            data={"parsed_card": cards_data[index]},
+        )
+
+
+async def on_new_search(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
+    manager.dialog_data.clear()
+    await manager.switch_to(LookupSG.enter_word)
+
+
+async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
+    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK)
+
+
+lookup_dialog = Dialog(
+    Window(
+        Const("<b>Word Lookup</b>\n\nEnter a Belarusian word to search:"),
+        MessageInput(on_word_entered),
+        Button(Const("← Back"), id="back", on_click=on_back_to_menu),
+        state=LookupSG.enter_word,
+    ),
+    Window(
+        Format("{card_text}"),
+        Format("\n{nav_info}", when="nav_info"),
+        Group(
+            Row(
+                Button(Const("← Prev"), id="prev", on_click=on_prev, when="has_prev"),
+                Button(Const("Next →"), id="next", on_click=on_next, when="has_next"),
+            ),
+            Button(Const("📥 Add to Deck"), id="add", on_click=on_add_to_deck),
+            Button(Const("🔍 New Search"), id="new_search", on_click=on_new_search),
+            Button(Const("← Menu"), id="menu", on_click=on_back_to_menu),
+        ),
+        state=LookupSG.results,
+        getter=results_getter,
+        parse_mode="HTML",
+    ),
+)
