@@ -28,7 +28,7 @@ async def decks_list_getter(
     deck_items = []
     for d in decks:
         stats = await deck_service.get_deck_stats(d.id)
-        label = f"{d.name} ({stats['total']} cards, {stats['due']} due)"
+        label = f"{d.name} ({stats['total']} картак, {stats['due']} да практыкі)"
         deck_items.append((label, str(d.id)))
 
     return {"decks": deck_items, "has_decks": len(deck_items) > 0}
@@ -70,7 +70,7 @@ async def on_create_deck_name(
 ) -> None:
     name = message.text
     if not name or not name.strip():
-        await message.answer("Please enter a deck name.")
+        await message.answer("Калі ласка, увядзіце назву калодкі.")
         return
 
     user = manager.middleware_data.get("user")
@@ -93,7 +93,7 @@ async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: Dial
 
 deck_management_dialog = Dialog(
     Window(
-        Const("<b>My Decks</b>\n"),
+        Const("<b>Мае калодкі</b>\n"),
         Select(
             Format("{item[0]}"),
             id="deck_list",
@@ -101,29 +101,34 @@ deck_management_dialog = Dialog(
             items="decks",
             on_click=on_deck_selected,
         ),
-        Const("\nNo decks yet. Create one!", when=lambda data, *_: not data.get("has_decks")),
-        SwitchTo(Const("➕ Create Deck"), id="create", state=DeckManagementSG.create_deck),
-        Button(Const("← Menu"), id="menu", on_click=on_back_to_menu),
+        Const(
+            "\nЯшчэ няма калодак. Стварыце новую!", when=lambda data, *_: not data.get("has_decks")
+        ),
+        SwitchTo(Const("➕ Стварыць калодку"), id="create", state=DeckManagementSG.create_deck),
+        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
         state=DeckManagementSG.list_decks,
         getter=decks_list_getter,
     ),
     Window(
-        Const("<b>Create New Deck</b>\n\nEnter deck name:"),
+        Const("<b>Стварыць новую калодку</b>\n\nУвядзіце назву калодкі:"),
         MessageInput(on_create_deck_name),
-        SwitchTo(Const("← Back"), id="back", state=DeckManagementSG.list_decks),
+        SwitchTo(Const("← Назад"), id="back", state=DeckManagementSG.list_decks),
         state=DeckManagementSG.create_deck,
     ),
     Window(
         Format(
-            "<b>Deck Details</b>\n\nTotal cards: {total}\nNew cards: {new}\nDue for review: {due}"
+            "<b>Дэталі калодкі</b>\n\n"
+            "Агульная колькасць картак: {total}\n"
+            "Новыя карткі: {new}\n"
+            "Да практыкі: {due}"
         ),
         Button(
-            Const("🧠 Start Review"),
+            Const("🧠 Пачаць практыку"),
             id="review",
             on_click=on_start_review,
             when="has_due",
         ),
-        SwitchTo(Const("← Back"), id="back", state=DeckManagementSG.list_decks),
+        SwitchTo(Const("← Назад"), id="back", state=DeckManagementSG.list_decks),
         state=DeckManagementSG.view_deck,
         getter=deck_view_getter,
     ),

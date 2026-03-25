@@ -30,7 +30,7 @@ async def select_deck_getter(
         stats = await deck_service.get_deck_stats(d.id)
         due_count = stats["due"] + stats["new"]
         if due_count > 0:
-            label = f"{d.name} ({due_count} to review)"
+            label = f"{d.name} ({due_count} да практыкі)"
             deck_items.append((label, str(d.id)))
 
     return {"decks": deck_items, "has_decks": len(deck_items) > 0}
@@ -51,7 +51,7 @@ async def on_review_deck_selected(
     if manager.dialog_data.get("card_ids"):
         await manager.switch_to(ReviewSG.show_front)
     else:
-        await callback.answer("No cards to review!")
+        await callback.answer("Няма картак для практыкі ў гэтай калодцы.")
 
 
 async def _load_review_cards(
@@ -100,14 +100,14 @@ async def front_getter(
 
     card = await _get_current_card(dialog_manager, card_service)
     if not card:
-        return {"word": "No cards to review", "progress": ""}
+        return {"word": "Няма картак для практыкі.", "progress": ""}
 
     total = dialog_manager.dialog_data.get("total_count", 0)
     reviewed = dialog_manager.dialog_data.get("reviewed_count", 0)
 
     return {
         "word": card["word"],
-        "progress": f"Card {reviewed + 1} of {total}",
+        "progress": f"Картка {reviewed + 1} з {total}",
     }
 
 
@@ -204,7 +204,7 @@ async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: Dial
 
 review_dialog = Dialog(
     Window(
-        Const("<b>Select a deck to review:</b>"),
+        Const("<b>Абярыце калодку для практыкі:</b>"),
         Select(
             Format("{item[0]}"),
             id="review_deck",
@@ -213,30 +213,30 @@ review_dialog = Dialog(
             on_click=on_review_deck_selected,
         ),
         Const(
-            "\nNo decks with cards to review.",
+            "\nНяма калодак з карткамі для практыкі.",
             when=lambda data, *_: not data.get("has_decks"),
         ),
-        Button(Const("← Menu"), id="menu", on_click=on_back_to_menu),
+        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
         state=ReviewSG.select_deck,
         getter=select_deck_getter,
     ),
     Window(
         Format("<b>{word}</b>"),
         Format("\n{progress}"),
-        Button(Const("Show Answer"), id="show", on_click=on_show_answer),
-        Button(Const("← Menu"), id="menu", on_click=on_back_to_menu),
+        Button(Const("Паказаць адказ"), id="show", on_click=on_show_answer),
+        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
         state=ReviewSG.show_front,
         getter=front_getter,
     ),
     Window(
         Format("<b>{word}</b>\n\n{definition}{examples}"),
-        Const("\n\nHow well did you know this?"),
+        Const("\n\nЯк добра вы ведаеце гэтае слова?"),
         Group(
             Row(
-                Button(Const("Again"), id="again", on_click=on_again),
-                Button(Const("Hard"), id="hard", on_click=on_hard),
-                Button(Const("Good"), id="good", on_click=on_good),
-                Button(Const("Easy"), id="easy", on_click=on_easy),
+                Button(Const("Дрэнна"), id="again", on_click=on_again),
+                Button(Const("Цяжка"), id="hard", on_click=on_hard),
+                Button(Const("Нармалёва"), id="good", on_click=on_good),
+                Button(Const("Лёгка"), id="easy", on_click=on_easy),
             ),
         ),
         state=ReviewSG.show_back,
@@ -244,8 +244,8 @@ review_dialog = Dialog(
         parse_mode="HTML",
     ),
     Window(
-        Format("<b>Review Complete!</b>\n\nYou reviewed {reviewed} card(s)."),
-        Button(Const("← Menu"), id="menu", on_click=on_back_to_menu),
+        Format("<b>Практыка завершана!</b>\n\nВы праглядзелі {reviewed} картку(і)."),
+        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
         state=ReviewSG.session_complete,
         getter=complete_getter,
     ),

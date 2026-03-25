@@ -27,29 +27,29 @@ async def on_finish_onboarding(
 onboarding_dialog = Dialog(
     Window(
         Const(
-            "<b>Welcome to Slouka!</b>\n\n"
-            "Your personal Belarusian vocabulary trainer.\n\n"
-            "Build your word knowledge with flashcards "
-            "powered by spaced repetition."
+            "<b>Сардэчна запрашаем у Sloŭka!</b>\n\n"
+            "Ваш асабісты трэнер па вывучэнні беларускай лексікі.\n\n"
+            "Пашырайце свой слоўнікавы запас з дапамогай флэш-картак "
+            "і практыкуйцеся з дапамогай паўтарэння з інтэрваламі."
         ),
-        SwitchTo(Const("Next →"), id="to_how", state=OnboardingSG.how_it_works),
+        SwitchTo(Const("Далей →"), id="to_how", state=OnboardingSG.how_it_works),
         state=OnboardingSG.welcome,
     ),
     Window(
         Const(
-            "<b>How it works</b>\n\n"
-            "1. <b>Search</b> — Type any Belarusian word to look it up\n"
-            "2. <b>Save</b> — Add words to your decks as flashcards\n"
-            "3. <b>Review</b> — Practice with spaced repetition\n\n"
-            "The system schedules reviews so you see words "
-            "right before you'd forget them."
+            "<b>Як гэта працуе</b>\n\n"
+            "1. <b>Пошук</b> — Увядзіце любое беларускае слова, каб знайсці яго\n"
+            "2. <b>Захаваць</b> — Дадайце словы да сваіх калодак як флэш-карткі\n"
+            "3. <b>Практыкаваць</b> — Практыка з прамежкавым паўтарэннем\n\n"
+            "Сістэма плануе праверкі, каб вы бачылі словы "
+            "акурат перад тым, як забудзеце іх."
         ),
-        SwitchTo(Const("Next →"), id="to_ready", state=OnboardingSG.ready),
+        SwitchTo(Const("Далей →"), id="to_ready", state=OnboardingSG.ready),
         state=OnboardingSG.how_it_works,
     ),
     Window(
-        Const("<b>You're all set!</b>\n\nLet's start by searching your first word."),
-        Button(Const("Go to Menu →"), id="finish", on_click=on_finish_onboarding),
+        Const("<b>Усё гатова!</b>\n\nДавайце пачнем з пошуку вашага першага слова."),
+        Button(Const("Перайсці ў меню →"), id="finish", on_click=on_finish_onboarding),
         state=OnboardingSG.ready,
     ),
 )

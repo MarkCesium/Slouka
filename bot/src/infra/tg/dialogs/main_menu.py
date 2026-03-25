@@ -20,10 +20,10 @@ async def on_review(callback: CallbackQuery, button: Button, manager: DialogMana
 
 main_menu_dialog = Dialog(
     Window(
-        Const("<b>Main Menu</b>\n\nWhat would you like to do?"),
-        Button(Const("🔍 Search Word"), id="search", on_click=on_search),
-        Button(Const("📚 My Decks"), id="decks", on_click=on_decks),
-        Button(Const("🧠 Review"), id="review", on_click=on_review),
+        Const("<b>Галоўнае меню</b>\n\nШто б вы хацелі зрабіць?"),
+        Button(Const("🔍 Пошук слова"), id="search", on_click=on_search),
+        Button(Const("📚 Мае калодкі"), id="decks", on_click=on_decks),
+        Button(Const("🧠 Практыка"), id="review", on_click=on_review),
         state=MainMenuSG.menu,
     ),
 )

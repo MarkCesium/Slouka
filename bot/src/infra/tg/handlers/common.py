@@ -11,10 +11,10 @@ router = Router(name="common")
 @router.message(Command("help"))
 async def cmd_help(message: Message) -> None:
     await message.answer(
-        "<b>Slouka — Belarusian Vocabulary Trainer</b>\n\n"
-        "/start — Start the bot\n"
-        "/help — Show this message\n"
-        "/menu — Go to main menu\n",
+        "<b>Sloŭka — Інтэрактыўны тлумачальны слоўнік</b>\n\n"
+        "/start — Запусціць\n"
+        "/help — Паказаць гэтае паведамленне\n"
+        "/menu — Перайсці ў галоўнае меню\n",
     )
 
 

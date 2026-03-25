@@ -47,14 +47,14 @@ async def on_deck_selected(
     card_data = start_data.get("parsed_card", {}) if isinstance(start_data, dict) else {}
 
     if not card_data:
-        await callback.answer("Error: no card data.")
+        await callback.answer("Памылка: няма даных карткі.")
         return
 
     parsed_card = ParsedCard.model_validate(card_data)
     result = await card_service.create_card(deck_id, parsed_card)
 
     if result is None:
-        await callback.answer("This word is already in this deck!", show_alert=True)
+        await callback.answer("Гэтае слова ўжо ёсць у гэтай калодке!", show_alert=True)
         return
 
     manager.dialog_data["added_word"] = parsed_card.headword
@@ -70,7 +70,7 @@ async def on_create_deck_name(
 ) -> None:
     name = message.text
     if not name or not name.strip():
-        await message.answer("Please enter a deck name.")
+        await message.answer("Калі ласка, увядзіце назву калодкі.")
         return
 
     user = manager.middleware_data.get("user")
@@ -96,7 +96,7 @@ async def on_done(callback: CallbackQuery, button: Button, manager: DialogManage
 
 card_display_dialog = Dialog(
     Window(
-        Const("<b>Select a deck:</b>"),
+        Const("<b>Абярыце калодку:</b>"),
         Select(
             Format("{item[0]}"),
             id="deck_select",
@@ -104,22 +104,24 @@ card_display_dialog = Dialog(
             items="decks",
             on_click=on_deck_selected,
         ),
-        Const("\nNo decks yet. Create one!", when=lambda data, *_: not data.get("has_decks")),
-        SwitchTo(Const("➕ Create Deck"), id="create", state=CardDisplaySG.create_deck),
-        Button(Const("← Back"), id="back", on_click=on_done),
+        Const(
+            "\nЯшчэ няма калодак. Стварыце новую!", when=lambda data, *_: not data.get("has_decks")
+        ),
+        SwitchTo(Const("➕ Стварыць калодку"), id="create", state=CardDisplaySG.create_deck),
+        Button(Const("← Назад"), id="back", on_click=on_done),
         state=CardDisplaySG.select_deck,
         getter=decks_getter,
     ),
     Window(
-        Const("<b>Create New Deck</b>\n\nEnter deck name:"),
+        Const("<b>Стварыць новую калодку</b>\n\nУвядзіце назву калодкі:"),
         MessageInput(on_create_deck_name),
-        SwitchTo(Const("← Back"), id="back", state=CardDisplaySG.select_deck),
+        SwitchTo(Const("← Назад"), id="back", state=CardDisplaySG.select_deck),
         state=CardDisplaySG.create_deck,
     ),
     Window(
-        Format("Card <b>{word}</b> added to deck!"),
-        Button(Const("← Menu"), id="menu", on_click=on_back_to_menu),
-        Button(Const("← Back to results"), id="back_results", on_click=on_done),
+        Format("Картка <b>{word}</b> дададзена да калодкі!"),
+        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
+        Button(Const("← Назад да вынікаў"), id="back_results", on_click=on_done),
         state=CardDisplaySG.added,
         getter=added_getter,
     ),

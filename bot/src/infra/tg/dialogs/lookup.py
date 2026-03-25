@@ -27,14 +27,14 @@ async def on_word_entered(
 ) -> None:
     word = message.text
     if not word or not word.strip():
-        await message.answer("Please enter a word.")
+        await message.answer("Калі ласка, увядзіце слова.")
         return
 
     word = word.strip()
     cards = await verbum_service.search_word(word)
 
     if not cards:
-        await message.answer(f"No results found for <b>{word}</b>. Try another word.")
+        await message.answer(f"Не знойдзена вынікаў для <b>{word}</b>. Паспрабуйце іншае слова.")
         return
 
     manager.dialog_data["cards"] = [c.model_dump() for c in cards]
@@ -50,12 +50,12 @@ async def results_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[s
     query = dialog_manager.dialog_data.get("query", "")
 
     if not cards_data:
-        return {"card_text": "No results.", "nav_info": "", "query": query}
+        return {"card_text": "Не знойдзена вынікаў.", "nav_info": "", "query": query}
 
     card = ParsedCard.model_validate(cards_data[index])
     card_text = format_card_for_telegram(card)
     total = len(cards_data)
-    nav_info = f"Result {index + 1} of {total}" if total > 1 else ""
+    nav_info = f"Вынік {index + 1} з {total}" if total > 1 else ""
 
     return {
         "card_text": card_text,
@@ -101,9 +101,9 @@ async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: Dial
 
 lookup_dialog = Dialog(
     Window(
-        Const("<b>Word Lookup</b>\n\nEnter a Belarusian word to search:"),
+        Const("<b>Пошук слова</b>\n\nУвядзіце беларускае слова для пошуку:"),
         MessageInput(on_word_entered),
-        Button(Const("← Back"), id="back", on_click=on_back_to_menu),
+        Button(Const("← Назад"), id="back", on_click=on_back_to_menu),
         state=LookupSG.enter_word,
     ),
     Window(
@@ -111,12 +111,12 @@ lookup_dialog = Dialog(
         Format("\n{nav_info}", when="nav_info"),
         Group(
             Row(
-                Button(Const("← Prev"), id="prev", on_click=on_prev, when="has_prev"),
-                Button(Const("Next →"), id="next", on_click=on_next, when="has_next"),
+                Button(Const("← Папярэдні"), id="prev", on_click=on_prev, when="has_prev"),
+                Button(Const("Наступны →"), id="next", on_click=on_next, when="has_next"),
             ),
-            Button(Const("📥 Add to Deck"), id="add", on_click=on_add_to_deck),
-            Button(Const("🔍 New Search"), id="new_search", on_click=on_new_search),
-            Button(Const("← Menu"), id="menu", on_click=on_back_to_menu),
+            Button(Const("📥 Дадаць да калодкі"), id="add", on_click=on_add_to_deck),
+            Button(Const("🔍 Новы пошук"), id="new_search", on_click=on_new_search),
+            Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
         ),
         state=LookupSG.results,
         getter=results_getter,
