@@ -7,15 +7,15 @@ from .states import DeckManagementSG, LookupSG, MainMenuSG, ReviewSG
 
 
 async def on_search(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(LookupSG.enter_word) # pyright: ignore[reportUnknownMemberType]
+    await manager.start(LookupSG.enter_word)  # pyright: ignore[reportUnknownMemberType]
 
 
 async def on_decks(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(DeckManagementSG.list_decks) # pyright: ignore[reportUnknownMemberType]
+    await manager.start(DeckManagementSG.list_decks)  # pyright: ignore[reportUnknownMemberType]
 
 
 async def on_review(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(ReviewSG.select_deck) # pyright: ignore[reportUnknownMemberType]
+    await manager.start(ReviewSG.select_deck)  # pyright: ignore[reportUnknownMemberType]
 
 
 main_menu_dialog = Dialog(

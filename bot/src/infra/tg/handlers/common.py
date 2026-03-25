@@ -20,4 +20,4 @@ async def cmd_help(message: Message) -> None:
 
 @router.message(Command("menu"))
 async def cmd_menu(message: Message, dialog_manager: DialogManager) -> None:
-    await dialog_manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
+    await dialog_manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK)  # pyright: ignore[reportUnknownMemberType]

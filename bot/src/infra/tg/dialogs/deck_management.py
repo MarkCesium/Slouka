@@ -1,8 +1,7 @@
-import logging
 from typing import Any
 
-from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import Dialog, DialogManager, StartMode, Window
+from aiogram.types import CallbackQuery
+from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
@@ -11,10 +10,8 @@ from dishka.integrations.aiogram_dialog import inject
 
 from src.services.deck import DeckService
 
-from .common import get_dialog_data, get_user
-from .states import DeckManagementSG, MainMenuSG, ReviewSG
-
-logger = logging.getLogger(__name__)
+from .common import get_dialog_data, get_user, make_on_create_deck_name, no_decks, on_back_to_menu
+from .states import DeckManagementSG, ReviewSG
 
 
 @inject
@@ -31,7 +28,8 @@ async def decks_list_getter(
     deck_items: list[tuple[str, str]] = []
     for d in decks:
         stats = await deck_service.get_deck_stats(d.id)
-        label = f"{d.name} ({stats['total']} картак, {stats['due']} да практыкі)"
+        to_review = stats["due"] + stats["new"]
+        label = f"{d.name} ({stats['total']} картак, {to_review} да практыкі)"
         deck_items.append((label, str(d.id)))
 
     return {"decks": deck_items, "has_decks": len(deck_items) > 0}
@@ -58,47 +56,25 @@ async def on_deck_selected(
 async def deck_view_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
     data = get_dialog_data(dialog_manager)
     stats: dict[str, int] = data.get("deck_stats", {})
+    new = stats.get("new", 0)
+    due = stats.get("due", 0)
+    to_review = new + due
     return {
         "total": stats.get("total", 0),
-        "new": stats.get("new", 0),
-        "due": stats.get("due", 0),
-        "has_due": stats.get("due", 0) > 0 or stats.get("new", 0) > 0,
+        "new": new,
+        "due": to_review,
+        "has_due": to_review > 0,
     }
 
 
-@inject
-async def on_create_deck_name(
-    message: Message,
-    widget: MessageInput,
-    manager: DialogManager,
-    deck_service: FromDishka[DeckService],
-) -> None:
-    name = message.text
-    if not name or not name.strip():
-        await message.answer("Калі ласка, увядзіце назву калодкі.")
-        return
-
-    user = get_user(manager)
-    if not user:
-        return
-
-    await deck_service.create_deck(user.id, name.strip())
-    await manager.switch_to(DeckManagementSG.list_decks)
+on_create_deck_name = make_on_create_deck_name(DeckManagementSG.list_decks)
 
 
 async def on_start_review(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
     data = get_dialog_data(manager)
     deck_id: int | None = data.get("selected_deck_id")
     if deck_id is not None:
-        await manager.start(ReviewSG.show_front, data={"deck_id": deck_id}) # pyright: ignore[reportUnknownMemberType]
-
-
-async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
-
-
-def _no_decks(data: dict[str, Any], *_: Any) -> bool:
-    return not data.get("has_decks")
+        await manager.start(ReviewSG.show_front, data={"deck_id": deck_id})  # pyright: ignore[reportUnknownMemberType]
 
 
 deck_management_dialog = Dialog(
@@ -113,7 +89,7 @@ deck_management_dialog = Dialog(
         ),
         Const(
             "\nЯшчэ няма калодак. Стварыце новую!",
-            when=_no_decks,
+            when=no_decks,
         ),
         SwitchTo(
             Const("➕ Стварыць калодку"),

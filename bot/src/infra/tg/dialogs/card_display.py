@@ -1,8 +1,7 @@
-import logging
 from typing import Any
 
-from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import Dialog, DialogManager, StartMode, Window
+from aiogram.types import CallbackQuery
+from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
@@ -13,10 +12,15 @@ from src.infra.schemas.verbum import ParsedCard
 from src.services.card import CardService
 from src.services.deck import DeckService
 
-from .common import get_dialog_data, get_start_data, get_user
-from .states import CardDisplaySG, MainMenuSG
-
-logger = logging.getLogger(__name__)
+from .common import (
+    get_dialog_data,
+    get_start_data,
+    get_user,
+    make_on_create_deck_name,
+    no_decks,
+    on_back_to_menu,
+)
+from .states import CardDisplaySG
 
 
 @inject
@@ -68,24 +72,7 @@ async def on_deck_selected(
     await manager.switch_to(CardDisplaySG.added)
 
 
-@inject
-async def on_create_deck_name(
-    message: Message,
-    widget: MessageInput,
-    manager: DialogManager,
-    deck_service: FromDishka[DeckService],
-) -> None:
-    name = message.text
-    if not name or not name.strip():
-        await message.answer("Калі ласка, увядзіце назву калодкі.")
-        return
-
-    user = get_user(manager)
-    if not user:
-        return
-
-    await deck_service.create_deck(user.id, name.strip())
-    await manager.switch_to(CardDisplaySG.select_deck)
+on_create_deck_name = make_on_create_deck_name(CardDisplaySG.select_deck)
 
 
 async def added_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
@@ -94,16 +81,8 @@ async def added_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str
     return {"word": word}
 
 
-async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
-
-
 async def on_done(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
     await manager.done()
-
-
-def _no_decks(data: dict[str, Any], *_: Any) -> bool:
-    return not data.get("has_decks")
 
 
 card_display_dialog = Dialog(
@@ -118,7 +97,7 @@ card_display_dialog = Dialog(
         ),
         Const(
             "\nЯшчэ няма калодак. Стварыце новую!",
-            when=_no_decks,
+            when=no_decks,
         ),
         SwitchTo(
             Const("➕ Стварыць калодку"),

@@ -1,8 +1,7 @@
-import logging
 from typing import Any
 
 from aiogram.types import CallbackQuery
-from aiogram_dialog import Dialog, DialogManager, StartMode, Window
+from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.kbd import Button, Group, Row, Select
 from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
@@ -11,10 +10,8 @@ from dishka.integrations.aiogram_dialog import inject
 from src.services.card import CardService
 from src.services.deck import DeckService
 
-from .common import get_dialog_data, get_start_data, get_user
-from .states import MainMenuSG, ReviewSG
-
-logger = logging.getLogger(__name__)
+from .common import get_dialog_data, get_start_data, get_user, no_decks, on_back_to_menu
+from .states import ReviewSG
 
 
 @inject
@@ -165,58 +162,29 @@ async def _rate_card(
         await manager.switch_to(ReviewSG.show_front)
 
 
-@inject
-async def on_again(
-    callback: CallbackQuery,
-    button: Button,
-    manager: DialogManager,
-    card_service: FromDishka[CardService],
-) -> None:
-    await _rate_card(manager, card_service, quality=0)
+def _make_rate_handler(quality: int):  # type: ignore[no-untyped-def]
+    @inject
+    async def handler(
+        callback: CallbackQuery,
+        button: Button,
+        manager: DialogManager,
+        card_service: FromDishka[CardService],
+    ) -> None:
+        await _rate_card(manager, card_service, quality=quality)
+
+    return handler
 
 
-@inject
-async def on_hard(
-    callback: CallbackQuery,
-    button: Button,
-    manager: DialogManager,
-    card_service: FromDishka[CardService],
-) -> None:
-    await _rate_card(manager, card_service, quality=2)
-
-
-@inject
-async def on_good(
-    callback: CallbackQuery,
-    button: Button,
-    manager: DialogManager,
-    card_service: FromDishka[CardService],
-) -> None:
-    await _rate_card(manager, card_service, quality=4)
-
-
-@inject
-async def on_easy(
-    callback: CallbackQuery,
-    button: Button,
-    manager: DialogManager,
-    card_service: FromDishka[CardService],
-) -> None:
-    await _rate_card(manager, card_service, quality=5)
+on_again = _make_rate_handler(0)
+on_hard = _make_rate_handler(2)
+on_good = _make_rate_handler(4)
+on_easy = _make_rate_handler(5)
 
 
 async def complete_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
     data = get_dialog_data(dialog_manager)
     reviewed: int = data.get("reviewed_count", 0)
     return {"reviewed": reviewed}
-
-
-async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
-
-
-def _no_decks(data: dict[str, Any], *_: Any) -> bool:
-    return not data.get("has_decks")
 
 
 review_dialog = Dialog(
@@ -231,7 +199,7 @@ review_dialog = Dialog(
         ),
         Const(
             "\nНяма калодак з карткамі для практыкі.",
-            when=_no_decks,
+            when=no_decks,
         ),
         Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
         state=ReviewSG.select_deck,

@@ -1,8 +1,7 @@
-import logging
 from typing import Any
 
 from aiogram.types import CallbackQuery, Message
-from aiogram_dialog import Dialog, DialogManager, StartMode, Window
+from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Group, Row
 from aiogram_dialog.widgets.text import Const, Format
@@ -13,10 +12,8 @@ from src.infra.schemas.verbum import ParsedCard
 from src.infra.verbum.parser import format_card_for_telegram
 from src.services.verbum import VerbumService
 
-from .common import get_dialog_data
-from .states import CardDisplaySG, LookupSG, MainMenuSG
-
-logger = logging.getLogger(__name__)
+from .common import get_dialog_data, on_back_to_menu
+from .states import CardDisplaySG, LookupSG
 
 
 @inject
@@ -94,7 +91,7 @@ async def on_add_to_deck(callback: CallbackQuery, button: Button, manager: Dialo
     index: int = data.get("current_index", 0)
 
     if cards_data:
-        await manager.start( # pyright: ignore[reportUnknownMemberType]
+        await manager.start(  # pyright: ignore[reportUnknownMemberType]
             CardDisplaySG.select_deck,
             data={"parsed_card": cards_data[index]},
         )
@@ -103,10 +100,6 @@ async def on_add_to_deck(callback: CallbackQuery, button: Button, manager: Dialo
 async def on_new_search(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
     get_dialog_data(manager).clear()
     await manager.switch_to(LookupSG.enter_word)
-
-
-async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
 
 
 lookup_dialog = Dialog(
