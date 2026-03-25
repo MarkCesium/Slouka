@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import UTC, datetime
 
 from src.infra.db.models import Card, Deck
 from src.infra.db.uow import UnitOfWork
@@ -22,6 +23,12 @@ class DeckService:
             new = await self._uow.cards.count(
                 filters=[Card.deck_id == deck_id, Card.is_new == True]  # noqa: E712
             )
-            due_cards = await self._uow.cards.get_due_cards(deck_id, limit=1000)
-            due = len([c for c in due_cards if not c.is_new])
+            now = datetime.now(UTC)
+            due = await self._uow.cards.count(
+                filters=[
+                    Card.deck_id == deck_id,
+                    Card.is_new == False,  # noqa: E712
+                    Card.next_review_date <= now,
+                ]
+            )
             return {"total": total, "new": new, "due": due}
