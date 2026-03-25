@@ -94,7 +94,7 @@ async def on_add_to_deck(callback: CallbackQuery, button: Button, manager: Dialo
     index: int = data.get("current_index", 0)
 
     if cards_data:
-        await manager.start(
+        await manager.start( # pyright: ignore[reportUnknownMemberType]
             CardDisplaySG.select_deck,
             data={"parsed_card": cards_data[index]},
         )
@@ -106,7 +106,7 @@ async def on_new_search(callback: CallbackQuery, button: Button, manager: Dialog
 
 
 async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK)
+    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
 
 
 lookup_dialog = Dialog(

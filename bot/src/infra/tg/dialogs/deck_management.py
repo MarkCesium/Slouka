@@ -90,11 +90,11 @@ async def on_start_review(callback: CallbackQuery, button: Button, manager: Dial
     data = get_dialog_data(manager)
     deck_id: int | None = data.get("selected_deck_id")
     if deck_id is not None:
-        await manager.start(ReviewSG.show_front, data={"deck_id": deck_id})
+        await manager.start(ReviewSG.show_front, data={"deck_id": deck_id}) # pyright: ignore[reportUnknownMemberType]
 
 
 async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK)
+    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
 
 
 def _no_decks(data: dict[str, Any], *_: Any) -> bool:

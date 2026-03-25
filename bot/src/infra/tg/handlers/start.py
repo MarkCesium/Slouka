@@ -14,6 +14,6 @@ async def cmd_start(message: Message, dialog_manager: DialogManager, **kwargs: o
     user = kwargs.get("user")
 
     if not isinstance(user, User) or not user.onboarding_completed:
-        await dialog_manager.start(OnboardingSG.welcome, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(OnboardingSG.welcome, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
     else:
-        await dialog_manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]

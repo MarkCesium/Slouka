@@ -22,7 +22,7 @@ async def on_finish_onboarding(
     if user:
         await user_service.complete_onboarding(user.id)
 
-    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK)
+    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
 
 
 onboarding_dialog = Dialog(

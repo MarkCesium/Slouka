@@ -212,7 +212,7 @@ async def complete_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[
 
 
 async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK)
+    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
 
 
 def _no_decks(data: dict[str, Any], *_: Any) -> bool:

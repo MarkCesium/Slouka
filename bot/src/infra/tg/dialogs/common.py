@@ -17,7 +17,7 @@ def get_start_data(manager: DialogManager) -> dict[str, Any]:
     m: _ManagerAny = manager
     data: Any = m.start_data
     if isinstance(data, dict):
-        result: dict[str, Any] = data
+        result: dict[str, Any] = data # pyright: ignore[reportUnknownVariableType]
         return result
     return {}
 

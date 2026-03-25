@@ -95,7 +95,7 @@ async def added_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str
 
 
 async def on_back_to_menu(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK)
+    await manager.start(MainMenuSG.menu, mode=StartMode.RESET_STACK) # pyright: ignore[reportUnknownMemberType]
 
 
 async def on_done(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:
