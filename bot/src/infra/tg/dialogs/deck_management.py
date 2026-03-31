@@ -3,7 +3,7 @@ from typing import Any
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Button, Select, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, Group, Row, Select, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
@@ -68,6 +68,10 @@ async def confirm_delete_deck_getter(
     return {"deck_name": deck_name, "total": stats.get("total", 0)}
 
 
+CARDS_PER_PAGE = 6
+MAX_DEFINITION_LEN = 40
+
+
 @inject
 async def cards_list_getter(
     dialog_manager: DialogManager,
@@ -79,12 +83,42 @@ async def cards_list_getter(
     deck_name: str = data.get("deck_name", "")
 
     if deck_id is None:
-        return {"cards": [], "has_cards": False, "deck_name": deck_name}
+        return {"cards": [], "has_cards": False, "deck_name": deck_name, "cards_text": ""}
 
-    cards = await card_service.get_deck_cards(deck_id)
-    card_items: list[tuple[str, str]] = [(c.word, str(c.id)) for c in cards]
+    cards = list(await card_service.get_deck_cards(deck_id))
+    total = len(cards)
 
-    return {"cards": card_items, "has_cards": len(card_items) > 0, "deck_name": deck_name}
+    if total == 0:
+        return {"cards": [], "has_cards": False, "deck_name": deck_name, "cards_text": ""}
+
+    page: int = data.get("cards_page", 0)
+    total_pages = (total + CARDS_PER_PAGE - 1) // CARDS_PER_PAGE
+    page = min(page, total_pages - 1)
+    data["cards_page"] = page
+
+    start = page * CARDS_PER_PAGE
+    page_cards = cards[start : start + CARDS_PER_PAGE]
+
+    lines: list[str] = []
+    button_items: list[tuple[str, str]] = []
+    for i, card in enumerate(page_cards):
+        num = start + i + 1
+        definition = card.definition.replace("\n", " ")
+        if len(definition) > MAX_DEFINITION_LEN:
+            definition = definition[: MAX_DEFINITION_LEN - 1] + "…"
+        lines.append(f"{num}. <b>{card.word}</b> — {definition}")
+        button_items.append((str(num), str(card.id)))
+
+    return {
+        "cards": button_items,
+        "has_cards": True,
+        "deck_name": deck_name,
+        "cards_text": "\n".join(lines),
+        "has_prev": page > 0,
+        "has_next": page < total_pages - 1,
+        "page_label": f"{page + 1}/{total_pages}",
+        "show_pager": total_pages > 1,
+    }
 
 
 @inject
@@ -240,6 +274,22 @@ async def on_delete_card(
     await manager.switch_to(DeckManagementSG.view_cards)
 
 
+async def on_cards_page_prev(
+    callback: CallbackQuery, button: Button, manager: DialogManager
+) -> None:
+    data = get_dialog_data(manager)
+    page: int = data.get("cards_page", 0)
+    data["cards_page"] = max(0, page - 1)
+
+
+async def on_cards_page_next(
+    callback: CallbackQuery, button: Button, manager: DialogManager
+) -> None:
+    data = get_dialog_data(manager)
+    page: int = data.get("cards_page", 0)
+    data["cards_page"] = page + 1
+
+
 def no_cards(data: dict[str, Any], *_: Any) -> bool:
     return not data.get("has_cards")
 
@@ -348,13 +398,23 @@ deck_management_dialog = Dialog(
     ),
     # ── View cards list ──────────────────────────────────────────────────
     Window(
-        Format("<b>Карткі ў калодцы «{deck_name}»</b>\n"),
-        Select(
-            Format("{item[0]}"),
-            id="card_list",
-            item_id_getter=lambda item: item[1],
-            items="cards",
-            on_click=on_card_selected,  # pyright: ignore[reportArgumentType]
+        Format("<b>Карткі ў калодцы «{deck_name}»</b>\n\n{cards_text}"),
+        Group(
+            Select(
+                Format("{item[0]}"),
+                id="card_list",
+                item_id_getter=lambda item: item[1],
+                items="cards",
+                on_click=on_card_selected,  # pyright: ignore[reportArgumentType]
+            ),
+            width=6,
+            when="has_cards",
+        ),
+        Row(
+            Button(Const("‹"), id="cards_prev", on_click=on_cards_page_prev, when="has_prev"),
+            Button(Format("{page_label}"), id="cards_page_label"),
+            Button(Const("›"), id="cards_next", on_click=on_cards_page_next, when="has_next"),
+            when="show_pager",
         ),
         Const(
             "\nУ гэтай калодцы яшчэ няма картак.",
@@ -367,6 +427,7 @@ deck_management_dialog = Dialog(
         ),
         state=DeckManagementSG.view_cards,
         getter=cards_list_getter,
+        parse_mode="HTML",
     ),
     # ── View card detail ─────────────────────────────────────────────────
     Window(
