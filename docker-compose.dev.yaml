@@ -10,7 +10,7 @@ services:
   bot:
     build:
       context: ./bot
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     volumes:
       - ./bot/src:/bot/src
       - ./bot/migrations:/bot/migrations

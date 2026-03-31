@@ -57,4 +57,5 @@ dev = [
     "mypy>=1.19.1",
     "pyright>=1.1.408",
     "ruff>=0.15.7",
+    "watchfiles>=1.1.1",
 ]
