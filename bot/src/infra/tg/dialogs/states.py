@@ -35,3 +35,9 @@ class ReviewSG(StatesGroup):
     show_back = State()
     rate = State()
     session_complete = State()
+
+
+class SettingsSG(StatesGroup):
+    main = State()
+    select_hour = State()
+    select_timezone = State()

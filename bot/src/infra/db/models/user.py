@@ -16,4 +16,11 @@ class User(Base):
     onboarding_completed: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"
     )
+    notifications_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true"
+    )
+    notification_hour: Mapped[int] = mapped_column(Integer, default=9, server_default="9")
+    timezone: Mapped[str] = mapped_column(
+        String(50), default="Europe/Minsk", server_default="Europe/Minsk"
+    )
     decks: Mapped[list[Deck]] = relationship("Deck")

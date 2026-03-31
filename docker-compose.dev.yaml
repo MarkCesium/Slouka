@@ -15,6 +15,24 @@ services:
       - ./bot/src:/bot/src
       - ./bot/migrations:/bot/migrations
 
+  worker:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    volumes:
+      - ./bot/src:/bot/src
+    env_file: ./bot/.env
+    command: ["taskiq", "worker", "src.worker.tasks:broker"]
+
+  scheduler:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    volumes:
+      - ./bot/src:/bot/src
+    env_file: ./bot/.env
+    command: ["taskiq", "scheduler", "src.worker.broker:scheduler", "src.worker.tasks"]
+
 networks:
   slouka-net:
     driver: bridge

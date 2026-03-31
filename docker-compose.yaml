@@ -34,6 +34,24 @@ services:
     networks:
       - slouka-net
 
+  worker:
+    container_name: slouka-worker
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - slouka-net
+
+  scheduler:
+    container_name: slouka-scheduler
+    depends_on:
+      redis:
+        condition: service_started
+    networks:
+      - slouka-net
+
 networks:
   slouka-net:
     driver: bridge
