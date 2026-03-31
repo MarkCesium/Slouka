@@ -32,3 +32,15 @@ class DeckService:
                 ]
             )
             return {"total": total, "new": new, "due": due}
+
+    async def get_deck_by_id(self, deck_id: int) -> Deck | None:
+        async with self._uow:
+            return await self._uow.decks.get_by_id(deck_id)
+
+    async def rename_deck(self, deck_id: int, new_name: str) -> Deck:
+        async with self._uow:
+            return await self._uow.decks.update(deck_id, name=new_name)
+
+    async def delete_deck(self, deck_id: int) -> None:
+        async with self._uow:
+            await self._uow.decks.delete(deck_id)

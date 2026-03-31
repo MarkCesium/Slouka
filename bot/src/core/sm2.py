@@ -2,6 +2,9 @@ from datetime import UTC, datetime, timedelta
 
 
 class SM2Service:
+    DEFAULT_EASE_FACTOR = 2.5
+    DEFAULT_INTERVAL = 0
+    DEFAULT_REPETITIONS = 0
     MIN_EASE_FACTOR = 1.3
 
     def calculate(

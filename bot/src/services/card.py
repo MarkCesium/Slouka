@@ -67,3 +67,22 @@ class CardService:
                 next_review_date=next_review,
                 is_new=False,
             )
+
+    async def get_deck_cards(self, deck_id: int) -> Sequence[Card]:
+        async with self._uow:
+            return await self._uow.cards.get_all(deck_id=deck_id)
+
+    async def delete_card(self, card_id: int) -> None:
+        async with self._uow:
+            await self._uow.cards.delete(card_id)
+
+    async def reset_card_progress(self, card_id: int) -> Card:
+        async with self._uow:
+            return await self._uow.cards.update(
+                card_id,
+                ease_factor=self._sm2.DEFAULT_EASE_FACTOR,
+                interval=self._sm2.DEFAULT_INTERVAL,
+                repetitions=self._sm2.DEFAULT_REPETITIONS,
+                next_review_date=datetime.now(UTC),
+                is_new=True,
+            )
