@@ -17,12 +17,13 @@ src/
 │   ├── verbum/     # External API client + HTML parser
 │   ├── schemas/    # Pydantic models (API responses, parsed data)
 │   └── tg/         # Telegram layer (aiogram handlers, aiogram-dialog dialogs, middleware)
+├── worker/         # Taskiq broker, scheduler, periodic tasks
 └── dependencies/   # Dishka DI providers
 ```
 
 ### Core Layer Rules
 
-`core/` contains implementation-independent logic: config, algorithms (SM2), enums, constants, shared types. If it doesn't depend on any external library or infrastructure — it belongs in core.
+`core/` contains implementation-independent logic: config, algorithms (SM2). If it doesn't depend on any external library or infrastructure — it belongs in core.
 
 ### Key Patterns
 
@@ -53,12 +54,24 @@ src/
 
 Cards are unique per `(deck_id, word)`. `CardService.create_card` returns `None` if duplicate.
 
+### Scheduled Notifications (Taskiq)
+
+- **Broker**: `RedisStreamBroker` on Redis DB index `/2` (index `/0` = FSM storage, `/1` = app Redis)
+- **Scheduler**: `TaskiqScheduler` with `LabelScheduleSource`, runs as separate Docker service (single instance only)
+- **Worker**: Separate Docker service, runs tasks with Dishka DI (container initialized on `WORKER_STARTUP` event)
+- **Dishka integration**: `setup_dishka(container, broker)` adds middleware; tasks use `@broker.task` then `@inject(patch_module=True)` with `FromDishka[T]` params
+- **Cron task** `send_review_notifications`: runs every hour, queries users with due cards, filters by timezone + notification_hour, sends Telegram message
+- **User model fields**: `notifications_enabled` (bool), `notification_hour` (int, local time 0-23), `timezone` (str, IANA like `Europe/Minsk`)
+- **Edge cases**: `TelegramForbiddenError` auto-disables notifications; `TelegramRetryAfter` retries once after sleep
+- Worker uses its own `BotProvider` (APP scope) — safe because it only calls `send_message`, not polling
+
 ## Tech Stack
 
 - Python 3.14, aiogram 3.x, aiogram-dialog 2.x, SQLAlchemy 2.x (async), Dishka, Pydantic, aiohttp
-- PostgreSQL 17, Redis (FSM storage)
+- Taskiq + taskiq-redis (scheduled tasks, background worker)
+- PostgreSQL 17, Redis (FSM storage + taskiq broker)
 - uv for dependency management, ruff for linting, mypy (strict) for type checking
-- Docker Compose with base + dev overlay pattern
+- Docker Compose with base + dev overlay pattern (5 services: database, redis, bot, worker, scheduler)
 - GitHub Actions CI: ruff check + ruff format + mypy on push/PR to main
 
 ## Commands
@@ -83,7 +96,7 @@ make migrate                   # Apply migrations
 
 ## Rules
 
-- All interface text in English (user translates to Belarusian manually)
+- All interface text in Belarusian
 - Always run `ruff check`, `ruff format`, and `mypy` before committing
 - Use `uv add --group dev` for dev dependencies, not `--dev`
 - Signed commits (`git commit -S`), no Co-Authored-By
