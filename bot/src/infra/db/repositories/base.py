@@ -70,6 +70,13 @@ class BaseRepository[T: Base]:
         await self.session.flush()
         return updated_entity
 
+    async def delete(self, id: int) -> None:
+        entity = await self.session.get(self.model, id)
+        if entity is None:
+            raise ValueError(f"Entity with id {id} not found")
+        await self.session.delete(entity)
+        await self.session.flush()
+
     async def count(self, filters: list[Any] | None = None) -> int:
         query = select(func.count()).select_from(self.model)
         if filters:
