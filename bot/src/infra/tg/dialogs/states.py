@@ -27,6 +27,11 @@ class DeckManagementSG(StatesGroup):
     list_decks = State()
     create_deck = State()
     view_deck = State()
+    rename_deck = State()
+    confirm_delete_deck = State()
+    view_cards = State()
+    view_card = State()
+    confirm_delete_card = State()
 
 
 class ReviewSG(StatesGroup):
