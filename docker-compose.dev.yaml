@@ -11,6 +11,11 @@ services:
     build:
       context: ./bot
       dockerfile: Dockerfile.dev
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - ./bot/src:/bot/src
       - ./bot/migrations:/bot/migrations
@@ -19,6 +24,11 @@ services:
     build:
       context: ./bot
       dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - ./bot/src:/bot/src
     env_file: ./bot/.env
@@ -28,6 +38,9 @@ services:
     build:
       context: ./bot
       dockerfile: Dockerfile
+    depends_on:
+      redis:
+        condition: service_started
     volumes:
       - ./bot/src:/bot/src
     env_file: ./bot/.env

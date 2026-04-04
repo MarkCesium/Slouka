@@ -15,7 +15,7 @@ services:
       - slouka-net
       - urlshortener-network
       - shared-network
-    depends_on: {}
+
 
   worker:
     build:
@@ -28,7 +28,7 @@ services:
       - slouka-net
       - urlshortener-network
       - shared-network
-    depends_on: {}
+
 
   scheduler:
     build:
@@ -40,7 +40,7 @@ services:
     networks:
       - slouka-net
       - shared-network
-    depends_on: {}
+
 
 networks:
   slouka-net:
