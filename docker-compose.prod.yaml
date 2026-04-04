@@ -13,9 +13,7 @@ services:
     env_file: ./bot/.env
     networks:
       - slouka-net
-      - urlshortener-network
       - shared-network
-
 
   worker:
     build:
@@ -26,9 +24,7 @@ services:
     command: ["taskiq", "worker", "src.worker.tasks:broker"]
     networks:
       - slouka-net
-      - urlshortener-network
       - shared-network
-
 
   scheduler:
     build:
@@ -41,13 +37,9 @@ services:
       - slouka-net
       - shared-network
 
-
 networks:
   slouka-net:
     driver: bridge
-  urlshortener-network:
-    external: true
-    name: urlshortener-network
   shared-network:
     external: true
     name: shared-network
