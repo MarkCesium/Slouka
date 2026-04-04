@@ -5,12 +5,13 @@ on:
     branches: [main]
     paths:
       - "bot/**"
-      - ".github/workflows/ci.yml"
+      - ".github/workflows/**"
   pull_request:
     branches: [main]
     paths:
       - "bot/**"
-      - ".github/workflows/ci.yml"
+      - ".github/workflows/**"
+  workflow_call:
 
 jobs:
   bot:

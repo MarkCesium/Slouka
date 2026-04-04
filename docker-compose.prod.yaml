@@ -1,0 +1,53 @@
+services:
+  database:
+    profiles: [disabled]
+
+  redis:
+    profiles: [disabled]
+
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./bot/.env
+    networks:
+      - slouka-net
+      - urlshortener-network
+      - shared-network
+    depends_on: {}
+
+  worker:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./bot/.env
+    command: ["taskiq", "worker", "src.worker.tasks:broker"]
+    networks:
+      - slouka-net
+      - urlshortener-network
+      - shared-network
+    depends_on: {}
+
+  scheduler:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./bot/.env
+    command: ["taskiq", "scheduler", "src.worker.broker:scheduler", "src.worker.tasks"]
+    networks:
+      - slouka-net
+      - shared-network
+    depends_on: {}
+
+networks:
+  slouka-net:
+    driver: bridge
+  urlshortener-network:
+    external: true
+    name: urlshortener-network
+  shared-network:
+    external: true
+    name: shared-network
