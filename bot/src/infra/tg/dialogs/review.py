@@ -39,9 +39,13 @@ async def on_review_deck_selected(
     card_service: FromDishka[CardService],
 ) -> None:
     deck_id = int(item_id)
+    user = get_user(manager)
+    if not user:
+        return
+
     data = get_dialog_data(manager)
     data["deck_id"] = deck_id
-    await _load_review_cards(manager, card_service, deck_id)
+    await _load_review_cards(manager, card_service, deck_id, user.id)
 
     if data.get("card_ids"):
         await manager.switch_to(ReviewSG.show_front)
@@ -50,9 +54,9 @@ async def on_review_deck_selected(
 
 
 async def _load_review_cards(
-    manager: DialogManager, card_service: CardService, deck_id: int
+    manager: DialogManager, card_service: CardService, deck_id: int, user_id: int | None = None
 ) -> None:
-    cards = await card_service.get_due_cards(deck_id)
+    cards = await card_service.get_due_cards(deck_id, user_id=user_id)
     data = get_dialog_data(manager)
 
     data["card_ids"] = [c.id for c in cards]
@@ -96,7 +100,9 @@ async def front_getter(
     if not data.get("card_ids") and start:
         deck_id: int | None = start.get("deck_id")
         if deck_id is not None:
-            await _load_review_cards(dialog_manager, card_service, deck_id)
+            user = get_user(dialog_manager)
+            user_id = user.id if user else None
+            await _load_review_cards(dialog_manager, card_service, deck_id, user_id)
 
     card = await _get_current_card(dialog_manager, card_service)
     if not card:

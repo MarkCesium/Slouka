@@ -1,7 +1,10 @@
 from zoneinfo import available_timezones
 
+from src.core.exceptions import EntityNotFoundError
 from src.infra.db.models import User
 from src.infra.db.uow import UnitOfWork
+
+_VALID_TIMEZONES: set[str] = available_timezones()
 
 
 class UserService:
@@ -25,7 +28,7 @@ class UserService:
         async with self._uow:
             user = await self._uow.users.get_by_id(user_id)
             if user is None:
-                raise ValueError(f"User {user_id} not found")
+                raise EntityNotFoundError(f"User {user_id} not found")
             new_state = not user.notifications_enabled
             await self._uow.users.update(user_id, notifications_enabled=new_state)
             return new_state
@@ -37,7 +40,7 @@ class UserService:
             )
 
     async def update_timezone(self, user_id: int, timezone: str) -> None:
-        if timezone not in available_timezones():
+        if timezone not in _VALID_TIMEZONES:
             raise ValueError(f"Invalid timezone: {timezone}")
         async with self._uow:
             await self._uow.users.update(user_id, timezone=timezone)

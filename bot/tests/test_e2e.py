@@ -28,11 +28,11 @@ class TestFullCardLifecycle:
         deck = await deck_service.create_deck(user.id, "My Deck")
 
         # Create card
-        card = await card_service.create_card(deck.id, _make_parsed_card())
+        card = await card_service.create_card(deck.id, _make_parsed_card(), user.id)
         assert card is not None
 
         # Card appears in due list
-        due = await card_service.get_due_cards(deck.id)
+        due = await card_service.get_due_cards(deck.id, user_id=user.id)
         assert any(c.id == card.id for c in due)
 
         # Review with quality=5
@@ -41,7 +41,7 @@ class TestFullCardLifecycle:
         assert reviewed.interval >= 1
 
         # Card no longer in due list (next_review_date is in the future)
-        due_after = await card_service.get_due_cards(deck.id)
+        due_after = await card_service.get_due_cards(deck.id, user_id=user.id)
         assert not any(c.id == card.id for c in due_after)
 
 
@@ -54,8 +54,8 @@ class TestDeduplicationAcrossService:
         user, _ = await user_service.get_or_create_user(1, "Test")
         deck = await deck_service.create_deck(user.id, "Deck")
 
-        card1 = await card_service.create_card(deck.id, _make_parsed_card("слова"))
-        card2 = await card_service.create_card(deck.id, _make_parsed_card("слова"))
+        card1 = await card_service.create_card(deck.id, _make_parsed_card("слова"), user.id)
+        card2 = await card_service.create_card(deck.id, _make_parsed_card("слова"), user.id)
         assert card1 is not None
         assert card2 is None
 
@@ -76,7 +76,7 @@ class TestNotificationEligibility:
         user, _ = await user_service.get_or_create_user(1, "Test")
         await user_service.complete_onboarding(user.id)
         deck = await deck_service.create_deck(user.id, "Deck")
-        await card_service.create_card(deck.id, _make_parsed_card())
+        await card_service.create_card(deck.id, _make_parsed_card(), user.id)
 
         # Should be eligible
         users = await notif_service.get_users_to_notify()

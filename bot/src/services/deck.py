@@ -1,14 +1,23 @@
 from collections.abc import Sequence
-from datetime import UTC, datetime
 from typing import Any
 
-from src.infra.db.models import Card, Deck
+from src.core.exceptions import DeckAccessDeniedError, EntityNotFoundError
+from src.infra.db.models import Deck
 from src.infra.db.uow import UnitOfWork
 
 
 class DeckService:
     def __init__(self, uow: UnitOfWork) -> None:
         self._uow = uow
+
+    async def _verify_deck_owner(self, deck_id: int, user_id: int) -> Deck:
+        """Verify deck exists and belongs to the user. Must be called inside UoW context."""
+        deck = await self._uow.decks.get_by_id(deck_id)
+        if deck is None:
+            raise EntityNotFoundError(f"Deck {deck_id} not found")
+        if deck.user_id != user_id:
+            raise DeckAccessDeniedError(f"Deck {deck_id} does not belong to user {user_id}")
+        return deck
 
     async def get_user_decks(self, user_id: int) -> Sequence[Deck]:
         async with self._uow:
@@ -18,20 +27,10 @@ class DeckService:
         async with self._uow:
             return await self._uow.decks.create(user_id=user_id, name=name)
 
-    async def get_deck_stats(self, deck_id: int) -> dict[str, int]:
+    async def get_deck_stats(self, deck_id: int, user_id: int) -> dict[str, int]:
         async with self._uow:
-            now = datetime.now(UTC)
-            total = await self._uow.cards.count(filters=[Card.deck_id == deck_id])
-            new = await self._uow.cards.count(
-                filters=[Card.deck_id == deck_id, Card.is_new == True]  # noqa: E712
-            )
-            due = await self._uow.cards.count(
-                filters=[
-                    Card.deck_id == deck_id,
-                    Card.is_new == False,  # noqa: E712
-                    Card.next_review_date <= now,
-                ]
-            )
+            await self._verify_deck_owner(deck_id, user_id)
+            total, new, due = await self._uow.decks.get_single_deck_stats(deck_id)
             return {"total": total, "new": new, "due": due}
 
     async def get_decks_with_stats(self, user_id: int) -> list[dict[str, Any]]:
@@ -55,14 +54,16 @@ class DeckService:
         all_decks = await self.get_decks_with_stats(user_id)
         return [d for d in all_decks if d["to_review"] > 0]
 
-    async def get_deck_by_id(self, deck_id: int) -> Deck | None:
+    async def get_deck_by_id(self, deck_id: int, user_id: int) -> Deck:
         async with self._uow:
-            return await self._uow.decks.get_by_id(deck_id)
+            return await self._verify_deck_owner(deck_id, user_id)
 
-    async def rename_deck(self, deck_id: int, new_name: str) -> Deck:
+    async def rename_deck(self, deck_id: int, new_name: str, user_id: int) -> Deck:
         async with self._uow:
+            await self._verify_deck_owner(deck_id, user_id)
             return await self._uow.decks.update(deck_id, name=new_name)
 
-    async def delete_deck(self, deck_id: int) -> None:
+    async def delete_deck(self, deck_id: int, user_id: int) -> None:
         async with self._uow:
+            await self._verify_deck_owner(deck_id, user_id)
             await self._uow.decks.delete(deck_id)

@@ -1,6 +1,16 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Float, ForeignKey, Index, Integer, String, Text, text
+from sqlalchemy import (
+    Boolean,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -13,6 +23,7 @@ if TYPE_CHECKING:
 class Card(Base, AuditMixin):
     __tablename__ = "cards"
     __table_args__ = (
+        UniqueConstraint("deck_id", "word", name="uq_cards_deck_id_word"),
         Index("ix_cards_deck_id_next_review_date", "deck_id", "next_review_date"),
         Index("ix_cards_is_new", "is_new", postgresql_where=text("is_new = true")),
     )

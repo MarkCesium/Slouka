@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.exceptions import EntityNotFoundError
 from src.infra.db.models import Base
 
 
@@ -61,14 +62,14 @@ class BaseRepository[T: Base]:
         )
         updated_entity = result.scalar_one_or_none()
         if not updated_entity:
-            raise ValueError(f"Entity with id {id} not found")
+            raise EntityNotFoundError(f"Entity with id {id} not found")
         await self.session.flush()
         return updated_entity
 
     async def delete(self, id: int) -> None:
         entity = await self.session.get(self.model, id)
         if entity is None:
-            raise ValueError(f"Entity with id {id} not found")
+            raise EntityNotFoundError(f"Entity with id {id} not found")
         await self.session.delete(entity)
         await self.session.flush()
 

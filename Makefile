@@ -1,4 +1,4 @@
-.PHONY: dev prod down logs migration migrate
+.PHONY: dev prod down logs migration migrate test lint format migrate-down
 
 dev:
 	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up --build
@@ -17,3 +17,15 @@ migration:
 
 migrate:
 	docker exec slouka-bot alembic upgrade head
+
+migrate-down:
+	docker exec slouka-bot alembic downgrade -1
+
+test:
+	cd bot && uv run pytest tests -v
+
+lint:
+	cd bot && uv run ruff check src tests && uv run ruff format --check src tests && uv run mypy src
+
+format:
+	cd bot && uv run ruff format src tests

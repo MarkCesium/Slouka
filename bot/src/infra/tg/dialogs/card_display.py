@@ -51,6 +51,10 @@ async def on_deck_selected(
     card_service: FromDishka[CardService],
 ) -> None:
     deck_id = int(item_id)
+    user = get_user(manager)
+    if not user:
+        return
+
     start = get_start_data(manager)
     card_data: dict[str, Any] = start.get("parsed_card", {})
 
@@ -59,7 +63,7 @@ async def on_deck_selected(
         return
 
     parsed_card = ParsedCard.model_validate(card_data)
-    result = await card_service.create_card(deck_id, parsed_card)
+    result = await card_service.create_card(deck_id, parsed_card, user.id)
 
     if result is None:
         await callback.answer(

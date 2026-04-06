@@ -36,3 +36,25 @@ class DeckRepository(BaseRepository[Deck]):
         )
         result = await self.session.execute(query)
         return result.all()
+
+    async def get_single_deck_stats(self, deck_id: int) -> Row[tuple[int, int, int]]:
+        """Return (total, new, due) for a single deck in one query."""
+        now = datetime.now(UTC)
+        query = (
+            select(
+                func.count(Card.id).label("total"),
+                func.count(case((Card.is_new == True, Card.id))).label("new"),  # noqa: E712
+                func.count(
+                    case(
+                        (
+                            (Card.is_new == False) & (Card.next_review_date <= now),  # noqa: E712
+                            Card.id,
+                        )
+                    )
+                ).label("due"),
+            )
+            .select_from(Card)
+            .where(Card.deck_id == deck_id)
+        )
+        result = await self.session.execute(query)
+        return result.one()

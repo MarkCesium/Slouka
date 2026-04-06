@@ -23,6 +23,11 @@ services:
       - slouka-net
     volumes:
       - ./var/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   bot:
     container_name: slouka-bot

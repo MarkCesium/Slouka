@@ -15,7 +15,7 @@ services:
       database:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./bot/src:/bot/src
       - ./bot/migrations:/bot/migrations
@@ -28,7 +28,7 @@ services:
       database:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./bot/src:/bot/src
     env_file: ./bot/.env
@@ -39,7 +39,7 @@ services:
       dockerfile: Dockerfile
     depends_on:
       redis:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./bot/src:/bot/src
     env_file: ./bot/.env

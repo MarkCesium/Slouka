@@ -1,6 +1,9 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
+from sqlalchemy.exc import IntegrityError
+
+from src.core.exceptions import DeckAccessDeniedError, EntityNotFoundError
 from src.core.sm2 import SM2Service
 from src.infra.db.models import Card
 from src.infra.db.uow import UnitOfWork
@@ -12,8 +15,18 @@ class CardService:
         self._uow = uow
         self._sm2 = sm2
 
-    async def create_card(self, deck_id: int, parsed_card: ParsedCard) -> Card | None:
+    async def _verify_deck_owner(self, deck_id: int, user_id: int) -> None:
+        """Verify deck exists and belongs to the user. Must be called inside UoW context."""
+        deck = await self._uow.decks.get_by_id(deck_id)
+        if deck is None:
+            raise EntityNotFoundError(f"Deck {deck_id} not found")
+        if deck.user_id != user_id:
+            raise DeckAccessDeniedError(f"Deck {deck_id} does not belong to user {user_id}")
+
+    async def create_card(self, deck_id: int, parsed_card: ParsedCard, user_id: int) -> Card | None:
         async with self._uow:
+            await self._verify_deck_owner(deck_id, user_id)
+
             existing = await self._uow.cards.find(
                 filters=[Card.deck_id == deck_id, Card.word == parsed_card.headword],
                 limit=1,
@@ -30,16 +43,24 @@ class CardService:
             for d in parsed_card.definitions:
                 examples_parts.extend(d.examples)
 
-            return await self._uow.cards.create(
-                deck_id=deck_id,
-                word=parsed_card.headword,
-                definition="\n".join(definition_parts),
-                examples="\n".join(examples_parts) if examples_parts else None,
-                next_review_date=datetime.now(UTC),
-            )
+            try:
+                return await self._uow.cards.create(
+                    deck_id=deck_id,
+                    word=parsed_card.headword,
+                    definition="\n".join(definition_parts),
+                    examples="\n".join(examples_parts) if examples_parts else None,
+                    next_review_date=datetime.now(UTC),
+                )
+            except IntegrityError:
+                await self._uow.session.rollback()
+                return None
 
-    async def get_due_cards(self, deck_id: int, limit: int = 20) -> Sequence[Card]:
+    async def get_due_cards(
+        self, deck_id: int, limit: int = 20, *, user_id: int | None = None
+    ) -> Sequence[Card]:
         async with self._uow:
+            if user_id is not None:
+                await self._verify_deck_owner(deck_id, user_id)
             return await self._uow.cards.get_due_cards(deck_id, limit)
 
     async def get_card_by_id(self, card_id: int) -> Card | None:
@@ -50,7 +71,7 @@ class CardService:
         async with self._uow:
             card = await self._uow.cards.get_by_id(card_id)
             if card is None:
-                raise ValueError(f"Card {card_id} not found")
+                raise EntityNotFoundError(f"Card {card_id} not found")
 
             ease, interval, repetitions, next_review = self._sm2.calculate(
                 ease=card.ease_factor,
@@ -68,9 +89,27 @@ class CardService:
                 is_new=False,
             )
 
-    async def get_deck_cards(self, deck_id: int) -> Sequence[Card]:
+    async def get_deck_cards(self, deck_id: int, user_id: int) -> Sequence[Card]:
         async with self._uow:
+            await self._verify_deck_owner(deck_id, user_id)
             return await self._uow.cards.get_all(deck_id=deck_id)
+
+    async def get_deck_cards_paginated(
+        self, deck_id: int, limit: int, offset: int, user_id: int
+    ) -> Sequence[Card]:
+        async with self._uow:
+            await self._verify_deck_owner(deck_id, user_id)
+            return await self._uow.cards.find(
+                filters=[Card.deck_id == deck_id],
+                order_by=Card.id,
+                limit=limit,
+                offset=offset,
+            )
+
+    async def count_deck_cards(self, deck_id: int, user_id: int) -> int:
+        async with self._uow:
+            await self._verify_deck_owner(deck_id, user_id)
+            return await self._uow.cards.count(filters=[Card.deck_id == deck_id])
 
     async def delete_card(self, card_id: int) -> None:
         async with self._uow:

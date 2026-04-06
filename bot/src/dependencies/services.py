@@ -32,7 +32,7 @@ class ServiceProvider(Provider):
     def provide_verbum_parser(self) -> VerbumParser:
         return VerbumParser()
 
-    @provide(scope=Scope.REQUEST)
+    @provide(scope=Scope.APP)
     def provide_sm2_service(self) -> SM2Service:
         return SM2Service()
 

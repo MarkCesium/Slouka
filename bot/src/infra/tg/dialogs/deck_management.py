@@ -79,15 +79,15 @@ async def cards_list_getter(
     card_service: FromDishka[CardService],
     **kwargs: Any,
 ) -> dict[str, Any]:
+    user = get_user(dialog_manager)
     data = get_dialog_data(dialog_manager)
     deck_id: int | None = data.get("selected_deck_id")
     deck_name: str = data.get("deck_name", "")
 
-    if deck_id is None:
+    if deck_id is None or not user:
         return {"cards": [], "has_cards": False, "deck_name": deck_name, "cards_text": ""}
 
-    cards = list(await card_service.get_deck_cards(deck_id))
-    total = len(cards)
+    total = await card_service.count_deck_cards(deck_id, user.id)
 
     if total == 0:
         return {"cards": [], "has_cards": False, "deck_name": deck_name, "cards_text": ""}
@@ -97,13 +97,15 @@ async def cards_list_getter(
     page = min(page, total_pages - 1)
     data["cards_page"] = page
 
-    start = page * CARDS_PER_PAGE
-    page_cards = cards[start : start + CARDS_PER_PAGE]
+    offset = page * CARDS_PER_PAGE
+    page_cards = await card_service.get_deck_cards_paginated(
+        deck_id, CARDS_PER_PAGE, offset, user.id
+    )
 
     lines: list[str] = []
     button_items: list[tuple[str, str]] = []
     for i, card in enumerate(page_cards):
-        num = start + i + 1
+        num = offset + i + 1
         definition = card.definition.replace("\n", " ")
         if len(definition) > MAX_DEFINITION_LEN:
             definition = definition[: MAX_DEFINITION_LEN - 1] + "…"
@@ -166,14 +168,17 @@ async def on_deck_selected(
     deck_service: FromDishka[DeckService],
 ) -> None:
     deck_id = int(item_id)
+    user = get_user(manager)
+    if not user:
+        return
+
     data = get_dialog_data(manager)
     data["selected_deck_id"] = deck_id
 
-    deck = await deck_service.get_deck_by_id(deck_id)
-    if deck:
-        data["deck_name"] = deck.name
+    deck = await deck_service.get_deck_by_id(deck_id, user.id)
+    data["deck_name"] = deck.name
 
-    stats = await deck_service.get_deck_stats(deck_id)
+    stats = await deck_service.get_deck_stats(deck_id, user.id)
     data["deck_stats"] = stats
     await manager.switch_to(DeckManagementSG.view_deck)
 
@@ -200,15 +205,19 @@ async def on_rename_deck(
         await message.answer(DeckManagement.ENTER_NEW_NAME)
         return
 
+    user = get_user(manager)
+    if not user:
+        return
+
     data = get_dialog_data(manager)
     deck_id: int | None = data.get("selected_deck_id")
     if deck_id is None:
         return
 
-    await deck_service.rename_deck(deck_id, name.strip())
+    await deck_service.rename_deck(deck_id, name.strip(), user.id)
     data["deck_name"] = name.strip()
 
-    stats = await deck_service.get_deck_stats(deck_id)
+    stats = await deck_service.get_deck_stats(deck_id, user.id)
     data["deck_stats"] = stats
     await manager.switch_to(DeckManagementSG.view_deck)
 
@@ -220,10 +229,14 @@ async def on_delete_deck(
     manager: DialogManager,
     deck_service: FromDishka[DeckService],
 ) -> None:
+    user = get_user(manager)
+    if not user:
+        return
+
     data = get_dialog_data(manager)
     deck_id: int | None = data.get("selected_deck_id")
     if deck_id is not None:
-        await deck_service.delete_deck(deck_id)
+        await deck_service.delete_deck(deck_id, user.id)
     await manager.switch_to(DeckManagementSG.list_decks)
 
 
