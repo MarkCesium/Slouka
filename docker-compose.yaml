@@ -33,11 +33,13 @@ services:
     container_name: slouka-worker
     networks:
       - slouka-net
+    command: ["taskiq", "worker", "src.worker.tasks:broker"]
 
   scheduler:
     container_name: slouka-scheduler
     networks:
       - slouka-net
+    command: ["taskiq", "scheduler", "src.worker.broker:scheduler", "src.worker.tasks"]
 
 networks:
   slouka-net:

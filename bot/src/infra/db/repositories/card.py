@@ -1,12 +1,17 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import or_
+from sqlalchemy import ColumnElement, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infra.db.models import Card
 
 from .base import BaseRepository
+
+
+def due_cards_filter(now: datetime) -> ColumnElement[bool]:
+    """Reusable filter: cards that are due for review (overdue OR new)."""
+    return or_(Card.next_review_date <= now, Card.is_new == True)  # noqa: E712
 
 
 class CardRepository(BaseRepository[Card]):
@@ -18,7 +23,7 @@ class CardRepository(BaseRepository[Card]):
         return await self.find(
             filters=[
                 Card.deck_id == deck_id,
-                or_(Card.next_review_date <= now, Card.is_new == True),  # noqa: E712
+                due_cards_filter(now),
             ],
             order_by=Card.next_review_date.asc(),
             limit=limit,

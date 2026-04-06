@@ -21,7 +21,6 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: ./bot/.env
-    command: ["taskiq", "worker", "src.worker.tasks:broker"]
     networks:
       - slouka-net
       - shared-network
@@ -32,7 +31,6 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: ./bot/.env
-    command: ["taskiq", "scheduler", "src.worker.broker:scheduler", "src.worker.tasks"]
     networks:
       - slouka-net
       - shared-network

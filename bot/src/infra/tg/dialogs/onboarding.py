@@ -5,6 +5,7 @@ from aiogram_dialog.widgets.text import Const
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
+from src.infra.tg.strings import Onboarding
 from src.services.user import UserService
 
 from .common import get_user
@@ -27,30 +28,18 @@ async def on_finish_onboarding(
 
 onboarding_dialog = Dialog(
     Window(
-        Const(
-            "<b>Сардэчна запрашаем у Sloŭka!</b>\n\n"
-            "Ваш асабісты трэнер па вывучэнні беларускай лексікі.\n\n"
-            "Пашырайце свой слоўнікавы запас з дапамогай флэш-картак "
-            "і практыкуйцеся з дапамогай паўтарэння з інтэрваламі."
-        ),
-        SwitchTo(Const("Далей →"), id="to_how", state=OnboardingSG.how_it_works),
+        Const(Onboarding.WELCOME),
+        SwitchTo(Const(Onboarding.NEXT), id="to_how", state=OnboardingSG.how_it_works),
         state=OnboardingSG.welcome,
     ),
     Window(
-        Const(
-            "<b>Як гэта працуе</b>\n\n"
-            "1. <b>Пошук</b> — Увядзіце любое беларускае слова, каб знайсці яго\n"
-            "2. <b>Захаваць</b> — Дадайце словы да сваіх калодак як флэш-карткі\n"
-            "3. <b>Практыкаваць</b> — Практыка з прамежкавым паўтарэннем\n\n"
-            "Сістэма плануе праверкі, каб вы бачылі словы "
-            "акурат перад тым, як забудзеце іх."
-        ),
-        SwitchTo(Const("Далей →"), id="to_ready", state=OnboardingSG.ready),
+        Const(Onboarding.HOW_IT_WORKS),
+        SwitchTo(Const(Onboarding.NEXT), id="to_ready", state=OnboardingSG.ready),
         state=OnboardingSG.how_it_works,
     ),
     Window(
-        Const("<b>Усё гатова!</b>\n\nДавайце пачнем з пошуку вашага першага слова."),
-        Button(Const("Перайсці ў меню →"), id="finish", on_click=on_finish_onboarding),
+        Const(Onboarding.READY),
+        Button(Const(Onboarding.GO_TO_MENU), id="finish", on_click=on_finish_onboarding),
         state=OnboardingSG.ready,
     ),
 )

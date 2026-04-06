@@ -32,7 +32,6 @@ services:
     volumes:
       - ./bot/src:/bot/src
     env_file: ./bot/.env
-    command: ["taskiq", "worker", "src.worker.tasks:broker"]
 
   scheduler:
     build:
@@ -44,7 +43,6 @@ services:
     volumes:
       - ./bot/src:/bot/src
     env_file: ./bot/.env
-    command: ["taskiq", "scheduler", "src.worker.broker:scheduler", "src.worker.tasks"]
 
 networks:
   slouka-net:

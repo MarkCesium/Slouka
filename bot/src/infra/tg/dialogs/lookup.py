@@ -9,6 +9,7 @@ from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
 from src.infra.schemas.verbum import ParsedCard
+from src.infra.tg.strings import Buttons, Lookup
 from src.infra.verbum.parser import format_card_for_telegram
 from src.services.verbum import VerbumService
 
@@ -25,14 +26,14 @@ async def on_word_entered(
 ) -> None:
     word = message.text
     if not word or not word.strip():
-        await message.answer("Калі ласка, увядзіце слова.")
+        await message.answer(Lookup.ENTER_WORD)
         return
 
     word = word.strip()
     cards = await verbum_service.search_word(word)
 
     if not cards:
-        await message.answer(f"Не знойдзена вынікаў для <b>{word}</b>. Паспрабуйце іншае слова.")
+        await message.answer(Lookup.NO_RESULTS_FOR.format(word=word))
         return
 
     data = get_dialog_data(manager)
@@ -51,7 +52,7 @@ async def results_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[s
 
     if not cards_data:
         return {
-            "card_text": "Не знойдзена вынікаў.",
+            "card_text": Lookup.NO_RESULTS,
             "nav_info": "",
             "query": query,
         }
@@ -104,9 +105,9 @@ async def on_new_search(callback: CallbackQuery, button: Button, manager: Dialog
 
 lookup_dialog = Dialog(
     Window(
-        Const("<b>Пошук слова</b>\n\nУвядзіце слова для пошуку (беларускае ці рускае):"),
+        Const(Lookup.TITLE),
         MessageInput(on_word_entered),
-        Button(Const("← Назад"), id="back", on_click=on_back_to_menu),
+        Button(Const(Buttons.BACK), id="back", on_click=on_back_to_menu),
         state=LookupSG.enter_word,
     ),
     Window(
@@ -115,30 +116,30 @@ lookup_dialog = Dialog(
         Group(
             Row(
                 Button(
-                    Const("← Папярэдні"),
+                    Const(Lookup.PREV),
                     id="prev",
                     on_click=on_prev,
                     when="has_prev",
                 ),
                 Button(
-                    Const("Наступны →"),
+                    Const(Lookup.NEXT),
                     id="next",
                     on_click=on_next,
                     when="has_next",
                 ),
             ),
             Button(
-                Const("📥 Дадаць да калодкі"),
+                Const(Lookup.ADD_TO_DECK),
                 id="add",
                 on_click=on_add_to_deck,
             ),
             Button(
-                Const("🔍 Новы пошук"),
+                Const(Lookup.NEW_SEARCH),
                 id="new_search",
                 on_click=on_new_search,
             ),
             Button(
-                Const("← Меню"),
+                Const(Buttons.MENU),
                 id="menu",
                 on_click=on_back_to_menu,
             ),

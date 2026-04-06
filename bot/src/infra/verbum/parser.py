@@ -6,6 +6,19 @@ from src.infra.schemas.verbum import ParsedCard, ParsedDefinition
 
 logger = logging.getLogger(__name__)
 
+_DEF_NUMBER_RE = re.compile(r"(\d+)\.")
+
+
+def _strip_accent(text: str) -> str:
+    """Remove combining acute accent mark (U+0301) used for stress."""
+    return text.replace("\u0301", "")
+
+
+def _normalize_ws(text: str) -> str:
+    """Collapse consecutive whitespace into a single space."""
+    return re.sub(r"\s+", " ", text)
+
+
 DICTIONARY_NAMES: dict[str, str] = {
     "tsblm2022": "Тлумачальны слоўнік (2022)",
     "tsbm": "Тлумачальны слоўнік (1977-84)",
@@ -178,7 +191,7 @@ class _ExplanatoryParser(HTMLParser):
 
         # Definition numbers
         if self._in_def_number:
-            match = re.match(r"(\d+)\.", text)
+            match = _DEF_NUMBER_RE.match(text)
             if match:
                 num = int(match.group(1))
                 self._saw_first_def = True
@@ -204,7 +217,7 @@ class _ExplanatoryParser(HTMLParser):
         self.headword_with_accent = self.headword_with_accent.strip()
 
         # Clean accent marks from plain headword for display
-        self.headword = self.headword.replace("\u0301", "")
+        self.headword = _strip_accent(self.headword)
 
         # Determine part of speech
         pos_keywords = [
@@ -267,7 +280,7 @@ class _KlyshkaParser(HTMLParser):
             self.body_text += data
 
     def finalize(self) -> None:
-        self.headword = self.headword.strip().replace("\u0301", "")
+        self.headword = _strip_accent(self.headword.strip())
         self.headword_with_accent = self.headword_with_accent.strip()
 
 
@@ -312,7 +325,7 @@ class _Rbs10Parser(HTMLParser):
     def _flush_def(self) -> None:
         """Flush the definition buffer into a ParsedDefinition."""
         text = "".join(self._def_buf)
-        text = re.sub(r"\s+", " ", text).strip(" ,.;")
+        text = _normalize_ws(text).strip(" ,.;")
         if text and (self._current_def_num is not None or not self._saw_first_def):
             # Only create unnumbered defs before the first numbered one.
             # After that, unnumbered text is phrase translation — skip it.
@@ -345,9 +358,9 @@ class _Rbs10Parser(HTMLParser):
             elif self._in_bold:
                 self._in_bold = False
                 bold_text = "".join(self._bold_buf)
-                bold_text_stripped = re.sub(r"\s+", " ", bold_text).strip()
+                bold_text_stripped = _normalize_ws(bold_text).strip()
                 # Check if this is a definition number like "1."
-                match = re.match(r"(\d+)\.", bold_text_stripped)
+                match = _DEF_NUMBER_RE.match(bold_text_stripped)
                 if match:
                     self._flush_def()
                     self._current_def_num = int(match.group(1))
@@ -394,7 +407,7 @@ class _Rbs10Parser(HTMLParser):
 
     def finalize(self) -> None:
         self._flush_def()
-        self.headword = self.headword.strip().replace("\u0301", "")
+        self.headword = _strip_accent(self.headword.strip())
         self.headword_with_accent = self.headword_with_accent.strip()
 
         # POS detection (Russian labels)
@@ -495,7 +508,7 @@ class VerbumParser:
                 definitions = [ParsedDefinition(text=plain_text)]
 
         for d in definitions:
-            d.text = re.sub(r"\s+", " ", d.text).strip(" ,.")
+            d.text = _normalize_ws(d.text).strip(" ,.")
 
         accent: str | None = headword_with_accent
         if accent == headword or not accent:
@@ -514,8 +527,7 @@ class VerbumParser:
 
     def _strip_html(self, html: str) -> str:
         clean = re.sub(r"<[^>]+>", " ", html)
-        clean = re.sub(r"\s+", " ", clean)
-        return clean.strip()
+        return _normalize_ws(clean).strip()
 
     def _extract_headword(self, html: str) -> str:
         # Try <strong class="hw"> and <b class="hw">

@@ -10,6 +10,7 @@ from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
 from src.infra.db.models import User
+from src.infra.tg.strings import Common
 from src.services.deck import DeckService
 
 from .states import MainMenuSG
@@ -61,7 +62,7 @@ def make_on_create_deck_name(
     ) -> None:
         name = message.text
         if not name or not name.strip():
-            await message.answer("Калі ласка, увядзіце назву калодкі.")
+            await message.answer(Common.ENTER_DECK_NAME)
             return
 
         user = get_user(manager)

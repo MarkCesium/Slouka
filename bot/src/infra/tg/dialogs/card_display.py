@@ -9,6 +9,7 @@ from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
 from src.infra.schemas.verbum import ParsedCard
+from src.infra.tg.strings import Buttons, CardDisplay, Common
 from src.services.card import CardService
 from src.services.deck import DeckService
 
@@ -54,7 +55,7 @@ async def on_deck_selected(
     card_data: dict[str, Any] = start.get("parsed_card", {})
 
     if not card_data:
-        await callback.answer("Памылка: няма даных карткі.")
+        await callback.answer(CardDisplay.CARD_DATA_ERROR)
         return
 
     parsed_card = ParsedCard.model_validate(card_data)
@@ -62,7 +63,7 @@ async def on_deck_selected(
 
     if result is None:
         await callback.answer(
-            "Гэтае слова ўжо ёсць у гэтай калодке!",
+            CardDisplay.WORD_ALREADY_IN_DECK,
             show_alert=True,
         )
         return
@@ -87,7 +88,7 @@ async def on_done(callback: CallbackQuery, button: Button, manager: DialogManage
 
 card_display_dialog = Dialog(
     Window(
-        Const("<b>Абярыце калодку:</b>"),
+        Const(CardDisplay.SELECT_DECK),
         Select(
             Format("{item[0]}"),
             id="deck_select",
@@ -96,33 +97,33 @@ card_display_dialog = Dialog(
             on_click=on_deck_selected,  # pyright: ignore[reportArgumentType]
         ),
         Const(
-            "\nЯшчэ няма калодак. Стварыце новую!",
+            Common.NO_DECKS,
             when=no_decks,
         ),
         SwitchTo(
-            Const("➕ Стварыць калодку"),
+            Const(Buttons.CREATE_DECK),
             id="create",
             state=CardDisplaySG.create_deck,
         ),
-        Button(Const("← Назад"), id="back", on_click=on_done),
+        Button(Const(Buttons.BACK), id="back", on_click=on_done),
         state=CardDisplaySG.select_deck,
         getter=decks_getter,
     ),
     Window(
-        Const("<b>Стварыць новую калодку</b>\n\nУвядзіце назву калодкі:"),
+        Const(Common.CREATE_DECK_TITLE),
         MessageInput(on_create_deck_name),
         SwitchTo(
-            Const("← Назад"),
+            Const(Buttons.BACK),
             id="back",
             state=CardDisplaySG.select_deck,
         ),
         state=CardDisplaySG.create_deck,
     ),
     Window(
-        Format("Картка <b>{word}</b> дададзена да калодкі!"),
-        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
+        Format(CardDisplay.CARD_ADDED),
+        Button(Const(Buttons.MENU), id="menu", on_click=on_back_to_menu),
         Button(
-            Const("← Назад да вынікаў"),
+            Const(CardDisplay.BACK_TO_RESULTS),
             id="back_results",
             on_click=on_done,
         ),

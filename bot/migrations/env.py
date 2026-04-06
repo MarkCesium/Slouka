@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-from src.core.config import Settings
+from src.core.config import settings
 from src.infra.db.models import Base
 
 # this is the Alembic Config object, which provides
@@ -29,7 +29,7 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-config.set_main_option("sqlalchemy.url", str(Settings().database.url))  # type: ignore[call-arg]
+config.set_main_option("sqlalchemy.url", str(settings.database.url))
 
 
 def run_migrations_offline() -> None:

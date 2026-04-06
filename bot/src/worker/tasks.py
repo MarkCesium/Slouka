@@ -7,14 +7,18 @@ from aiogram import Bot
 from aiogram.exceptions import TelegramForbiddenError, TelegramRetryAfter
 from dishka.integrations.taskiq import FromDishka, inject
 
+from src.infra.tg.strings import Notifications
 from src.services.notification import NotificationService
 from src.worker.broker import broker
 
 logger = logging.getLogger(__name__)
 
-NOTIFICATION_TEXT = (
-    "Вітаю, <b>{name}</b>! 👋\n\nУ цябе ёсць карткі для паўтарэння. Час трэніравацца! 📚"
-)
+
+async def _send_notification(bot: Bot, user_id: int, name: str) -> None:
+    await bot.send_message(
+        chat_id=user_id,
+        text=Notifications.TEXT.format(name=name),
+    )
 
 
 @broker.task(schedule=[{"cron": "*/10 * * * *"}])
@@ -34,10 +38,7 @@ async def send_review_notifications(
             continue
 
         try:
-            await bot.send_message(
-                chat_id=user.id,
-                text=NOTIFICATION_TEXT.format(name=user.name),
-            )
+            await _send_notification(bot, user.id, user.name)
             notified += 1
         except TelegramForbiddenError:
             logger.warning("User %d blocked the bot, disabling notifications", user.id)
@@ -46,10 +47,7 @@ async def send_review_notifications(
             logger.warning("Rate limited, sleeping %s seconds", e.retry_after)
             await asyncio.sleep(e.retry_after)
             try:
-                await bot.send_message(
-                    chat_id=user.id,
-                    text=NOTIFICATION_TEXT.format(name=user.name),
-                )
+                await _send_notification(bot, user.id, user.name)
                 notified += 1
             except Exception:
                 logger.exception("Failed to notify user %d after retry", user.id)

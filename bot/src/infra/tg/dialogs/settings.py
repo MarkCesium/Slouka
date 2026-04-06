@@ -16,6 +16,8 @@ from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
 from src.core.timezone import format_timezone, search_timezones, timezone_from_location
+from src.infra.tg.strings import Buttons
+from src.infra.tg.strings import Settings as Strings
 from src.services.user import UserService
 
 from .common import get_dialog_data, get_user, on_back_to_menu
@@ -38,9 +40,9 @@ async def settings_getter(
     if not user:
         return {}
 
-    status = "✅ Уключаны" if user.notifications_enabled else "❌ Выключаны"
+    status = Strings.ENABLED if user.notifications_enabled else Strings.DISABLED
     tz_display = format_timezone(user.timezone)
-    toggle_text = "Выключыць апавяшчэнні" if user.notifications_enabled else "Уключыць апавяшчэнні"
+    toggle_text = Strings.TOGGLE_DISABLE if user.notifications_enabled else Strings.TOGGLE_ENABLE
 
     return {
         "status": status,
@@ -143,12 +145,12 @@ async def on_request_location(
     if not callback.message:
         return
     kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="📍 Адправіць месцазнаходжанне", request_location=True)]],
+        keyboard=[[KeyboardButton(text=Strings.TZ_SEND_LOCATION, request_location=True)]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
     await callback.message.answer(
-        "Націсніце кнопку ніжэй, каб адправіць месцазнаходжанне:",
+        Strings.TZ_CLICK_BUTTON,
         reply_markup=kb,
     )
 
@@ -162,12 +164,12 @@ async def on_location_received(
         return
     tz = timezone_from_location(message.location.latitude, message.location.longitude)
     if tz is None:
-        await message.answer("Не ўдалося вызначыць часавы пояс. Паспрабуйце пошук па горадзе.")
+        await message.answer(Strings.TZ_DETECT_FAILED)
         return
     data = get_dialog_data(manager)
     data["selected_tz"] = tz
     data["selected_tz_label"] = format_timezone(tz)
-    await message.answer("📍 Месцазнаходжанне атрымана!", reply_markup=ReplyKeyboardRemove())
+    await message.answer(Strings.TZ_LOCATION_RECEIVED, reply_markup=ReplyKeyboardRemove())
     await manager.switch_to(SettingsSG.tz_confirm)  # pyright: ignore[reportUnknownMemberType]
 
 
@@ -179,7 +181,7 @@ async def on_tz_search(
     query = message.text or ""
     results = search_timezones(query)
     if not results:
-        await message.answer("Нічога не знойдзена. Паспрабуйце яшчэ раз.")
+        await message.answer(Strings.TZ_SEARCH_NO_RESULTS)
         return
     data = get_dialog_data(manager)
     data["tz_results"] = results
@@ -222,22 +224,17 @@ async def on_tz_confirmed(
 settings_dialog = Dialog(
     # Main settings
     Window(
-        Format(
-            "<b>⚙️ Налады</b>\n\n"
-            "Апавяшчэнні: {status}\n"
-            "Час: {hour}:{minute}\n"
-            "Часавы пояс: {timezone}"
-        ),
+        Format(Strings.TITLE),
         Button(Format("{toggle_text}"), id="toggle", on_click=on_toggle),
-        SwitchTo(Const("🕐 Змяніць час"), id="change_hour", state=SettingsSG.select_hour),
-        SwitchTo(Const("🌍 Змяніць часавы пояс"), id="change_tz", state=SettingsSG.select_timezone),
-        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
+        SwitchTo(Const(Strings.CHANGE_TIME), id="change_hour", state=SettingsSG.select_hour),
+        SwitchTo(Const(Strings.CHANGE_TIMEZONE), id="change_tz", state=SettingsSG.select_timezone),
+        Button(Const(Buttons.MENU), id="menu", on_click=on_back_to_menu),
         state=SettingsSG.main,
         getter=settings_getter,
     ),
     # Select hour
     Window(
-        Const("<b>Абярыце гадзіну апавяшчэння:</b>"),
+        Const(Strings.SELECT_HOUR),
         Group(
             Select(
                 Format("{item[0]}"),
@@ -248,13 +245,13 @@ settings_dialog = Dialog(
             ),
             width=6,
         ),
-        SwitchTo(Const("← Назад"), id="back", state=SettingsSG.main),
+        SwitchTo(Const(Buttons.BACK), id="back", state=SettingsSG.main),
         state=SettingsSG.select_hour,
         getter=settings_getter,
     ),
     # Select minute
     Window(
-        Format("<b>Абярыце хвіліны ({selected_hour}:??):</b>"),
+        Format(Strings.SELECT_MINUTE),
         Group(
             Select(
                 Format("{item[0]}"),
@@ -265,33 +262,35 @@ settings_dialog = Dialog(
             ),
             width=3,
         ),
-        SwitchTo(Const("← Назад"), id="back_hour", state=SettingsSG.select_hour),
+        SwitchTo(Const(Buttons.BACK), id="back_hour", state=SettingsSG.select_hour),
         state=SettingsSG.select_minute,
         getter=select_minute_getter,
     ),
     # Timezone: choose method
     Window(
-        Const("<b>Як вызначыць часавы пояс?</b>"),
+        Const(Strings.TZ_METHOD),
         Button(
-            Const("📍 Адправіць месцазнаходжанне"),
+            Const(Strings.TZ_SEND_LOCATION),
             id="request_loc",
             on_click=on_request_location,
         ),
         MessageInput(on_location_received, content_types=[ContentType.LOCATION]),
-        SwitchTo(Const("🔍 Пошук па горадзе"), id="tz_search", state=SettingsSG.tz_search_input),
-        SwitchTo(Const("← Назад"), id="back", state=SettingsSG.main),
+        SwitchTo(
+            Const(Strings.TZ_SEARCH_BY_CITY), id="tz_search", state=SettingsSG.tz_search_input
+        ),
+        SwitchTo(Const(Buttons.BACK), id="back", state=SettingsSG.main),
         state=SettingsSG.select_timezone,
     ),
     # Timezone: search input
     Window(
-        Const("<b>Увядзіце назву горада</b> (напрыклад, Minsk, Warsaw, Tokyo):"),
+        Const(Strings.TZ_ENTER_CITY),
         MessageInput(on_tz_search, content_types=[ContentType.TEXT]),
-        SwitchTo(Const("← Назад"), id="back", state=SettingsSG.select_timezone),
+        SwitchTo(Const(Buttons.BACK), id="back", state=SettingsSG.select_timezone),
         state=SettingsSG.tz_search_input,
     ),
     # Timezone: search results
     Window(
-        Const("<b>Абярыце часавы пояс:</b>"),
+        Const(Strings.TZ_SELECT),
         Select(
             Format("{item[0]}"),
             id="tz_result_select",
@@ -299,16 +298,18 @@ settings_dialog = Dialog(
             items="tz_results",
             on_click=on_tz_result_selected,  # pyright: ignore[reportArgumentType]
         ),
-        SwitchTo(Const("🔍 Шукаць яшчэ"), id="search_again", state=SettingsSG.tz_search_input),
-        SwitchTo(Const("← Назад"), id="back", state=SettingsSG.select_timezone),
+        SwitchTo(
+            Const(Strings.TZ_SEARCH_AGAIN), id="search_again", state=SettingsSG.tz_search_input
+        ),
+        SwitchTo(Const(Buttons.BACK), id="back", state=SettingsSG.select_timezone),
         state=SettingsSG.tz_search_results,
         getter=tz_search_results_getter,
     ),
     # Timezone: confirm
     Window(
-        Format("<b>Ваш часавы пояс:</b> {selected_tz_label}\n\nПацвердзіць?"),
-        Button(Const("✅ Пацвердзіць"), id="tz_confirm", on_click=on_tz_confirmed),
-        SwitchTo(Const("← Назад"), id="back", state=SettingsSG.select_timezone),
+        Format(Strings.TZ_CONFIRM),
+        Button(Const(Strings.TZ_CONFIRM_BTN), id="tz_confirm", on_click=on_tz_confirmed),
+        SwitchTo(Const(Buttons.BACK), id="back", state=SettingsSG.select_timezone),
         state=SettingsSG.tz_confirm,
         getter=tz_confirm_getter,
     ),

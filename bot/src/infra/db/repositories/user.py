@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infra.db.models import User
@@ -9,6 +9,7 @@ from src.infra.db.models.card import Card
 from src.infra.db.models.deck import Deck
 
 from .base import BaseRepository
+from .card import due_cards_filter
 
 
 class UserRepository(BaseRepository[User]):
@@ -22,7 +23,7 @@ class UserRepository(BaseRepository[User]):
             .join(Deck, Card.deck_id == Deck.id)
             .where(
                 Deck.user_id == User.id,
-                or_(Card.next_review_date <= now, Card.is_new == True),  # noqa: E712
+                due_cards_filter(now),
             )
             .correlate(User)
             .exists()

@@ -25,7 +25,6 @@ class ParsedDefinition(BaseModel):
     number: int | None = None
     text: str
     examples: list[str] = []
-    labels: list[str] = []
 
 
 class ParsedCard(BaseModel):

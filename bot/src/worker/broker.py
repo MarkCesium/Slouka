@@ -2,9 +2,7 @@ from taskiq import TaskiqEvents, TaskiqScheduler, TaskiqState
 from taskiq.schedule_sources import LabelScheduleSource
 from taskiq_redis import RedisAsyncResultBackend, RedisStreamBroker
 
-from src.core.config import Settings
-
-settings = Settings()  # type: ignore[call-arg]
+from src.core.config import settings
 
 broker = RedisStreamBroker(
     url=settings.redis.url + "/2",

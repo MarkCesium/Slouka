@@ -24,4 +24,4 @@ class User(Base):
     timezone: Mapped[str] = mapped_column(
         String(50), default="Europe/Minsk", server_default="Europe/Minsk"
     )
-    decks: Mapped[list[Deck]] = relationship("Deck")
+    decks: Mapped[list[Deck]] = relationship("Deck", back_populates="user")

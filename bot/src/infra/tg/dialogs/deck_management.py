@@ -8,6 +8,7 @@ from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
+from src.infra.tg.strings import Buttons, Common, DeckManagement
 from src.services.card import CardService
 from src.services.deck import DeckService
 
@@ -27,14 +28,14 @@ async def decks_list_getter(
     if not user:
         return {"decks": [], "has_decks": False}
 
-    decks = await deck_service.get_user_decks(user.id)
-    deck_items: list[tuple[str, str]] = []
-    for d in decks:
-        stats = await deck_service.get_deck_stats(d.id)
-        to_review = stats["due"] + stats["new"]
-        label = f"{d.name} ({stats['total']} картак, {to_review} да практыкі)"
-        deck_items.append((label, str(d.id)))
-
+    decks = await deck_service.get_decks_with_stats(user.id)
+    deck_items = [
+        (
+            f"{d['name']} ({d['total']} картак, {d['to_review']} да практыкі)",
+            str(d["id"]),
+        )
+        for d in decks
+    ]
     return {"decks": deck_items, "has_decks": len(deck_items) > 0}
 
 
@@ -196,7 +197,7 @@ async def on_rename_deck(
 ) -> None:
     name = message.text
     if not name or not name.strip():
-        await message.answer("Калі ласка, увядзіце новую назву калодкі.")
+        await message.answer(DeckManagement.ENTER_NEW_NAME)
         return
 
     data = get_dialog_data(manager)
@@ -257,7 +258,7 @@ async def on_reset_progress(
     if card_id is not None:
         await card_service.reset_card_progress(card_id)
     if callback.message:
-        await callback.answer("Прагрэс скінуты", show_alert=True)
+        await callback.answer(DeckManagement.PROGRESS_RESET, show_alert=True)
 
 
 @inject
@@ -299,7 +300,7 @@ def no_cards(data: dict[str, Any], *_: Any) -> bool:
 deck_management_dialog = Dialog(
     # ── List decks ───────────────────────────────────────────────────────
     Window(
-        Const("<b>Мае калодкі</b>\n"),
+        Const(DeckManagement.MY_DECKS),
         Select(
             Format("{item[0]}"),
             id="deck_list",
@@ -308,24 +309,24 @@ deck_management_dialog = Dialog(
             on_click=on_deck_selected,  # pyright: ignore[reportArgumentType]
         ),
         Const(
-            "\nЯшчэ няма калодак. Стварыце новую!",
+            Common.NO_DECKS,
             when=no_decks,
         ),
         SwitchTo(
-            Const("➕ Стварыць калодку"),
+            Const(Buttons.CREATE_DECK),
             id="create",
             state=DeckManagementSG.create_deck,
         ),
-        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
+        Button(Const(Buttons.MENU), id="menu", on_click=on_back_to_menu),
         state=DeckManagementSG.list_decks,
         getter=decks_list_getter,
     ),
     # ── Create deck ──────────────────────────────────────────────────────
     Window(
-        Const("<b>Стварыць новую калодку</b>\n\nУвядзіце назву калодкі:"),
+        Const(Common.CREATE_DECK_TITLE),
         MessageInput(on_create_deck_name),
         SwitchTo(
-            Const("← Назад"),
+            Const(Buttons.BACK),
             id="back",
             state=DeckManagementSG.list_decks,
         ),
@@ -333,35 +334,30 @@ deck_management_dialog = Dialog(
     ),
     # ── View deck ────────────────────────────────────────────────────────
     Window(
-        Format(
-            "<b>{deck_name}</b>\n\n"
-            "Агульная колькасць картак: {total}\n"
-            "Новыя карткі: {new}\n"
-            "Да практыкі: {due}"
-        ),
+        Format(DeckManagement.DECK_INFO),
         Button(
-            Const("🧠 Пачаць практыку"),
+            Const(DeckManagement.START_REVIEW),
             id="review",
             on_click=on_start_review,
             when="has_due",
         ),
         SwitchTo(
-            Const("📋 Карткі"),
+            Const(DeckManagement.VIEW_CARDS),
             id="cards",
             state=DeckManagementSG.view_cards,
         ),
         SwitchTo(
-            Const("📝 Змяніць назву"),
+            Const(DeckManagement.RENAME),
             id="rename",
             state=DeckManagementSG.rename_deck,
         ),
         SwitchTo(
-            Const("🗑 Выдаліць калодку"),
+            Const(DeckManagement.DELETE_DECK),
             id="delete",
             state=DeckManagementSG.confirm_delete_deck,
         ),
         SwitchTo(
-            Const("← Назад"),
+            Const(Buttons.BACK),
             id="back",
             state=DeckManagementSG.list_decks,
         ),
@@ -370,10 +366,10 @@ deck_management_dialog = Dialog(
     ),
     # ── Rename deck ──────────────────────────────────────────────────────
     Window(
-        Format("<b>Змяніць назву калодкі</b>\n\nБягучая назва: {deck_name}\nУвядзіце новую назву:"),
+        Format(DeckManagement.RENAME_TITLE),
         MessageInput(on_rename_deck),
         SwitchTo(
-            Const("← Назад"),
+            Const(Buttons.BACK),
             id="back",
             state=DeckManagementSG.view_deck,
         ),
@@ -382,14 +378,10 @@ deck_management_dialog = Dialog(
     ),
     # ── Confirm delete deck ──────────────────────────────────────────────
     Window(
-        Format(
-            '<b>Выдаліць калодку "{deck_name}"?</b>\n\n'
-            "Усе карткі ({total}) будуць выдалены.\n"
-            "Гэта дзеянне нельга адмяніць."
-        ),
-        Button(Const("🗑 Так, выдаліць"), id="confirm_delete", on_click=on_delete_deck),
+        Format(DeckManagement.CONFIRM_DELETE_DECK),
+        Button(Const(Buttons.CONFIRM_DELETE), id="confirm_delete", on_click=on_delete_deck),
         SwitchTo(
-            Const("← Не, назад"),
+            Const(Buttons.CANCEL_DELETE),
             id="back",
             state=DeckManagementSG.view_deck,
         ),
@@ -398,7 +390,7 @@ deck_management_dialog = Dialog(
     ),
     # ── View cards list ──────────────────────────────────────────────────
     Window(
-        Format("<b>Карткі ў калодцы «{deck_name}»</b>\n\n{cards_text}"),
+        Format(DeckManagement.CARDS_IN_DECK),
         Group(
             Select(
                 Format("{item[0]}"),
@@ -411,17 +403,27 @@ deck_management_dialog = Dialog(
             when="has_cards",
         ),
         Row(
-            Button(Const("‹"), id="cards_prev", on_click=on_cards_page_prev, when="has_prev"),
+            Button(
+                Const(DeckManagement.PREV_PAGE),
+                id="cards_prev",
+                on_click=on_cards_page_prev,
+                when="has_prev",
+            ),
             Button(Format("{page_label}"), id="cards_page_label"),
-            Button(Const("›"), id="cards_next", on_click=on_cards_page_next, when="has_next"),
+            Button(
+                Const(DeckManagement.NEXT_PAGE),
+                id="cards_next",
+                on_click=on_cards_page_next,
+                when="has_next",
+            ),
             when="show_pager",
         ),
         Const(
-            "\nУ гэтай калодцы яшчэ няма картак.",
+            DeckManagement.NO_CARDS,
             when=no_cards,
         ),
         SwitchTo(
-            Const("← Назад"),
+            Const(Buttons.BACK),
             id="back",
             state=DeckManagementSG.view_deck,
         ),
@@ -431,15 +433,15 @@ deck_management_dialog = Dialog(
     ),
     # ── View card detail ─────────────────────────────────────────────────
     Window(
-        Format("<b>{word}</b>\n\n{definition}{examples}"),
-        Button(Const("🔄 Скінуць прагрэс"), id="reset", on_click=on_reset_progress),
+        Format(DeckManagement.CARD_DETAIL),
+        Button(Const(DeckManagement.RESET_PROGRESS), id="reset", on_click=on_reset_progress),
         SwitchTo(
-            Const("🗑 Выдаліць картку"),
+            Const(DeckManagement.DELETE_CARD),
             id="delete_card",
             state=DeckManagementSG.confirm_delete_card,
         ),
         SwitchTo(
-            Const("← Назад"),
+            Const(Buttons.BACK),
             id="back",
             state=DeckManagementSG.view_cards,
         ),
@@ -449,10 +451,10 @@ deck_management_dialog = Dialog(
     ),
     # ── Confirm delete card ──────────────────────────────────────────────
     Window(
-        Format('<b>Выдаліць картку "{word}"?</b>\n\nГэта дзеянне нельга адмяніць.'),
-        Button(Const("🗑 Так, выдаліць"), id="confirm_delete_card", on_click=on_delete_card),
+        Format(DeckManagement.CONFIRM_DELETE_CARD),
+        Button(Const(Buttons.CONFIRM_DELETE), id="confirm_delete_card", on_click=on_delete_card),
         SwitchTo(
-            Const("← Не, назад"),
+            Const(Buttons.CANCEL_DELETE),
             id="back",
             state=DeckManagementSG.view_card,
         ),

@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncIterable
 
 from dishka import Provider, Scope, provide
 
@@ -8,7 +8,7 @@ from src.infra.db import DatabaseHelper, UnitOfWork
 
 class DBProvider(Provider):
     @provide(scope=Scope.APP)
-    async def provide_db_helper(self, settings: Settings) -> AsyncGenerator[DatabaseHelper]:
+    async def provide_db_helper(self, settings: Settings) -> AsyncIterable[DatabaseHelper]:
         db_helper = DatabaseHelper(settings.database)
         yield db_helper
         await db_helper.dispose()

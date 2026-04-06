@@ -10,7 +10,7 @@ from aiogram_dialog import setup_dialogs
 from dishka import make_async_container
 from dishka.integrations.aiogram import setup_dishka
 
-from src.core.config import Settings
+from src.core.config import settings
 from src.dependencies.config import ConfigProvider
 from src.dependencies.db import DBProvider
 from src.dependencies.redis import RedisProvider
@@ -22,8 +22,6 @@ from src.infra.tg.middlewares import UserMiddleware
 
 
 async def main() -> None:
-    settings = Settings()  # type: ignore[call-arg]
-
     logging.basicConfig(
         level=settings.logging.level_value,
         format=settings.logging.format,

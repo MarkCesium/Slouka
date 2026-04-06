@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Result, func, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infra.db.models import Base
@@ -45,13 +45,8 @@ class BaseRepository[T: Base]:
 
     async def get_all(self, **filter_by: Any) -> Sequence[T]:
         query = select(self.model).filter_by(**filter_by)
-        result = await self.session.execute(query)
-        return result.scalars().all()
-
-    async def get_one_or_none(self, **filter_by: Any) -> T | None:
-        query = select(self.model).filter_by(**filter_by)
-        result: Result[tuple[T]] = await self.session.execute(query)
-        return result.scalar_one_or_none()
+        result = await self.session.scalars(query)
+        return result.all()
 
     async def create(self, **data: Any) -> T:
         entity = self.model(**data)

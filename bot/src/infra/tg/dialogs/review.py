@@ -7,6 +7,7 @@ from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
+from src.infra.tg.strings import Buttons, Review
 from src.services.card import CardService
 from src.services.deck import DeckService
 
@@ -24,15 +25,8 @@ async def select_deck_getter(
     if not user:
         return {"decks": [], "has_decks": False}
 
-    decks = await deck_service.get_user_decks(user.id)
-    deck_items: list[tuple[str, str]] = []
-    for d in decks:
-        stats = await deck_service.get_deck_stats(d.id)
-        due_count = stats["due"] + stats["new"]
-        if due_count > 0:
-            label = f"{d.name} ({due_count} да практыкі)"
-            deck_items.append((label, str(d.id)))
-
+    due_decks = await deck_service.get_due_decks(user.id)
+    deck_items = [(f"{d['name']} ({d['to_review']} да практыкі)", str(d["id"])) for d in due_decks]
     return {"decks": deck_items, "has_decks": len(deck_items) > 0}
 
 
@@ -52,7 +46,7 @@ async def on_review_deck_selected(
     if data.get("card_ids"):
         await manager.switch_to(ReviewSG.show_front)
     else:
-        await callback.answer("Няма картак для практыкі ў гэтай калодцы.")
+        await callback.answer(Review.NO_CARDS)
 
 
 async def _load_review_cards(
@@ -106,7 +100,7 @@ async def front_getter(
 
     card = await _get_current_card(dialog_manager, card_service)
     if not card:
-        return {"word": "Няма картак для практыкі.", "progress": ""}
+        return {"word": Review.NO_PRACTICE_CARDS, "progress": ""}
 
     total: int = data.get("total_count", 0)
     reviewed: int = data.get("reviewed_count", 0)
@@ -189,7 +183,7 @@ async def complete_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[
 
 review_dialog = Dialog(
     Window(
-        Const("<b>Абярыце калодку для практыкі:</b>"),
+        Const(Review.SELECT_DECK),
         Select(
             Format("{item[0]}"),
             id="review_deck",
@@ -198,30 +192,30 @@ review_dialog = Dialog(
             on_click=on_review_deck_selected,  # pyright: ignore[reportArgumentType]
         ),
         Const(
-            "\nНяма калодак з карткамі для практыкі.",
+            Review.NO_DECKS,
             when=no_decks,
         ),
-        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
+        Button(Const(Buttons.MENU), id="menu", on_click=on_back_to_menu),
         state=ReviewSG.select_deck,
         getter=select_deck_getter,
     ),
     Window(
         Format("<b>{word}</b>"),
         Format("\n{progress}"),
-        Button(Const("Паказаць адказ"), id="show", on_click=on_show_answer),
-        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
+        Button(Const(Review.SHOW_ANSWER), id="show", on_click=on_show_answer),
+        Button(Const(Buttons.MENU), id="menu", on_click=on_back_to_menu),
         state=ReviewSG.show_front,
         getter=front_getter,
     ),
     Window(
         Format("<b>{word}</b>\n\n{definition}{examples}"),
-        Const("\n\nЯк добра вы ведаеце гэтае слова?"),
+        Const(Review.RATE_PROMPT),
         Group(
             Row(
-                Button(Const("Дрэнна"), id="again", on_click=on_again),
-                Button(Const("Цяжка"), id="hard", on_click=on_hard),
-                Button(Const("Нармалёва"), id="good", on_click=on_good),
-                Button(Const("Лёгка"), id="easy", on_click=on_easy),
+                Button(Const(Review.AGAIN), id="again", on_click=on_again),
+                Button(Const(Review.HARD), id="hard", on_click=on_hard),
+                Button(Const(Review.GOOD), id="good", on_click=on_good),
+                Button(Const(Review.EASY), id="easy", on_click=on_easy),
             ),
         ),
         state=ReviewSG.show_back,
@@ -229,8 +223,8 @@ review_dialog = Dialog(
         parse_mode="HTML",
     ),
     Window(
-        Format("<b>Практыка завершана!</b>\n\nВы праглядзелі {reviewed} картку(і)."),
-        Button(Const("← Меню"), id="menu", on_click=on_back_to_menu),
+        Format(Review.SESSION_COMPLETE),
+        Button(Const(Buttons.MENU), id="menu", on_click=on_back_to_menu),
         state=ReviewSG.session_complete,
         getter=complete_getter,
     ),
