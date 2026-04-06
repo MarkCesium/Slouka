@@ -45,4 +45,8 @@ class ReviewSG(StatesGroup):
 class SettingsSG(StatesGroup):
     main = State()
     select_hour = State()
+    select_minute = State()
     select_timezone = State()
+    tz_search_input = State()
+    tz_search_results = State()
+    tz_confirm = State()

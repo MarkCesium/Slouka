@@ -1,3 +1,5 @@
+from zoneinfo import available_timezones
+
 from src.infra.db.models import User
 from src.infra.db.uow import UnitOfWork
 
@@ -28,10 +30,14 @@ class UserService:
             await self._uow.users.update(user_id, notifications_enabled=new_state)
             return new_state
 
-    async def update_notification_hour(self, user_id: int, hour: int) -> None:
+    async def update_notification_time(self, user_id: int, hour: int, minute: int) -> None:
         async with self._uow:
-            await self._uow.users.update(user_id, notification_hour=hour)
+            await self._uow.users.update(
+                user_id, notification_hour=hour, notification_minute=minute
+            )
 
     async def update_timezone(self, user_id: int, timezone: str) -> None:
+        if timezone not in available_timezones():
+            raise ValueError(f"Invalid timezone: {timezone}")
         async with self._uow:
             await self._uow.users.update(user_id, timezone=timezone)

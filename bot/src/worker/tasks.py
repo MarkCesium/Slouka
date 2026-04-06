@@ -17,7 +17,7 @@ NOTIFICATION_TEXT = (
 )
 
 
-@broker.task(schedule=[{"cron": "0 * * * *"}])
+@broker.task(schedule=[{"cron": "*/10 * * * *"}])
 @inject(patch_module=True)
 async def send_review_notifications(
     notification_service: FromDishka[NotificationService],
@@ -27,8 +27,10 @@ async def send_review_notifications(
 
     notified = 0
     for user in users:
-        local_hour = datetime.now(ZoneInfo(user.timezone)).hour
-        if local_hour != user.notification_hour:
+        now = datetime.now(ZoneInfo(user.timezone))
+        local_hour = now.hour
+        local_minute = (now.minute // 10) * 10
+        if local_hour != user.notification_hour or local_minute != user.notification_minute:
             continue
 
         try:

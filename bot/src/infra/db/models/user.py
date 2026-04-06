@@ -20,6 +20,7 @@ class User(Base):
         Boolean, default=True, server_default="true"
     )
     notification_hour: Mapped[int] = mapped_column(Integer, default=9, server_default="9")
+    notification_minute: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     timezone: Mapped[str] = mapped_column(
         String(50), default="Europe/Minsk", server_default="Europe/Minsk"
     )
