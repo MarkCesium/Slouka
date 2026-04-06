@@ -94,7 +94,8 @@ async def on_toggle(
     user = get_user(manager)
     if not user:
         return
-    await user_service.toggle_notifications(user.id)
+    new_state = await user_service.toggle_notifications(user.id)
+    user.notifications_enabled = new_state
 
 
 @inject
@@ -128,6 +129,8 @@ async def on_minute_selected(
     hour = data.get("selected_hour", 0)
     minute = int(item_id)
     await user_service.update_notification_time(user.id, hour, minute)
+    user.notification_hour = hour
+    user.notification_minute = minute
     await manager.switch_to(SettingsSG.main)  # pyright: ignore[reportUnknownMemberType]
 
 
@@ -209,6 +212,7 @@ async def on_tz_confirmed(
     tz = data.get("selected_tz", "")
     if tz:
         await user_service.update_timezone(user.id, tz)
+        user.timezone = tz
     await manager.switch_to(SettingsSG.main)  # pyright: ignore[reportUnknownMemberType]
 
 
