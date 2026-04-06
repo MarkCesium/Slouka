@@ -21,7 +21,7 @@ from src.services.user import UserService
 from .common import get_dialog_data, get_user, on_back_to_menu
 from .states import SettingsSG
 
-HOURS: list[tuple[str, str]] = [(f"{h}:00", str(h)) for h in range(24)]
+HOURS: list[tuple[str, str]] = [(str(h), str(h)) for h in range(24)]
 MINUTES: list[tuple[str, str]] = [(f":{m:02d}", str(m)) for m in range(0, 60, 10)]
 
 
