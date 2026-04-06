@@ -14,8 +14,8 @@ on:
   workflow_call:
 
 jobs:
-  bot:
-    name: Bot
+  lint:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,10 +32,30 @@ jobs:
       - run: uv sync
 
       - name: Ruff check
-        run: uv run ruff check src
+        run: uv run ruff check src tests
 
       - name: Ruff format
-        run: uv run ruff format --check src
+        run: uv run ruff format --check src tests
 
       - name: Mypy
         run: uv run mypy src
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bot
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - run: cp .env.example .env
+      - run: uv sync
+
+      - name: Run tests
+        run: uv run pytest tests -v --tb=short

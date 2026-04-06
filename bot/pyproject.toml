@@ -53,10 +53,20 @@ reportUnknownMemberType = "warning"
 python_version = "3.14"
 strict = true
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+
 [dependency-groups]
 dev = [
+    "freezegun>=1.4",
     "mypy>=1.19.1",
     "pyright>=1.1.408",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.25",
     "ruff>=0.15.7",
+    "testcontainers[postgres]>=4.0",
     "watchfiles>=1.1.1",
 ]
