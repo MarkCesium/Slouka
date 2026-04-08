@@ -128,16 +128,14 @@ class TestStreakOnReview:
         card = await card_service.create_card(deck.id, _make_parsed_card(), user.id)
         assert card is not None
 
-        # Build up a 5-day streak
-        today = date(2026, 4, 8)
+        # Build up a 5-day streak (Apr 4–8)
         for i in range(5):
             await user_service.update_streak(user.id, date(2026, 4, 4 + i))
-        # last_activity_date = Apr 8, current_streak = 5
 
         # Next day: review a card and update streak
-        tomorrow = date(2026, 4, 9)
+        next_day = date(2026, 4, 9)
         await card_service.review_card(card.id, quality=4)
-        streak = await user_service.update_streak(user.id, tomorrow)
+        streak = await user_service.update_streak(user.id, next_day)
         assert streak == 6
 
         async with uow:
@@ -145,4 +143,4 @@ class TestStreakOnReview:
             assert fresh_user is not None
             assert fresh_user.current_streak == 6
             assert fresh_user.longest_streak == 6
-            assert fresh_user.last_activity_date == tomorrow
+            assert fresh_user.last_activity_date == next_day
