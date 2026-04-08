@@ -9,7 +9,8 @@ from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
-from src.infra.tg.strings import Buttons, Review
+from src.core.plural import pluralize
+from src.infra.tg.strings import Buttons, Review, Words
 from src.services.card import CardService
 from src.services.deck import DeckService
 from src.services.user import UserService
@@ -201,7 +202,7 @@ on_easy = _make_rate_handler(5)
 async def complete_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
     data = get_dialog_data(dialog_manager)
     reviewed: int = data.get("reviewed_count", 0)
-    return {"reviewed": reviewed}
+    return {"reviewed": reviewed, "reviewed_cards": pluralize(reviewed, *Words.CARD_ACC)}
 
 
 review_dialog = Dialog(

@@ -1,6 +1,14 @@
 """All user-facing text strings for the Slouka bot, organized by namespace."""
 
 
+class Words:
+    """Word form tuples (singular, few, many) for use with pluralize()."""
+
+    DAY = ("дзень", "дні", "дзён")
+    CARD = ("картка", "карткі", "картак")
+    CARD_ACC = ("картку", "карткі", "картак")
+
+
 class Buttons:
     """Shared button labels used across multiple dialogs."""
 
@@ -21,7 +29,7 @@ class Common:
 
 class MainMenu:
     TITLE = "<b>Галоўнае меню</b>\n\nШто б вы хацелі зрабіць?"
-    STREAK = "\n🔥 Серыя: {streak} дз."
+    STREAK = "\n🔥 Серыя: {streak} {streak_days}"
     SEARCH = "🔍 Пошук слова"
     DECKS = "📚 Мае калодкі"
     PRACTICE = "🧠 Практыка"
@@ -71,8 +79,8 @@ class DeckManagement:
     MY_DECKS = "<b>Мае калодкі</b>\n"
     DECK_INFO = (
         "<b>{deck_name}</b>\n\n"
-        "Агульная колькасць картак: {total}\n"
-        "Новыя карткі: {new}\n"
+        "Агульная колькасць: {total} {total_cards}\n"
+        "Новых: {new} {new_cards}\n"
         "Да практыкі: {due}"
     )
     RENAME_TITLE = (
@@ -81,7 +89,7 @@ class DeckManagement:
     ENTER_NEW_NAME = "Калі ласка, увядзіце новую назву калодкі."
     CONFIRM_DELETE_DECK = (
         '<b>Выдаліць калодку "{deck_name}"?</b>\n\n'
-        "Усе карткі ({total}) будуць выдалены.\n"
+        "Усе {total} {total_cards} будуць выдалены.\n"
         "Гэта дзеянне нельга адмяніць."
     )
     CARDS_IN_DECK = "<b>Карткі ў калодцы «{deck_name}»</b>\n\n{cards_text}"
@@ -110,7 +118,7 @@ class Review:
     HARD = "Цяжка"
     GOOD = "Нармалёва"
     EASY = "Лёгка"
-    SESSION_COMPLETE = "<b>Практыка завершана!</b>\n\nВы праглядзелі {reviewed} картку(і)."
+    SESSION_COMPLETE = "<b>Практыка завершана!</b>\n\nВы праглядзелі {reviewed} {reviewed_cards}."
 
 
 class Settings:

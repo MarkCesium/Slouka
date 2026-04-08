@@ -5,7 +5,8 @@ from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.text import Const, Format
 
-from src.infra.tg.strings import MainMenu
+from src.core.plural import pluralize
+from src.infra.tg.strings import MainMenu, Words
 
 from .common import get_user, has_streak
 from .states import DeckManagementSG, LookupSG, MainMenuSG, ReviewSG, SettingsSG
@@ -14,7 +15,7 @@ from .states import DeckManagementSG, LookupSG, MainMenuSG, ReviewSG, SettingsSG
 async def main_menu_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[str, Any]:
     user = get_user(dialog_manager)
     streak = user.current_streak if user else 0
-    return {"streak": streak}
+    return {"streak": streak, "streak_days": pluralize(streak, *Words.DAY)}
 
 
 async def on_search(callback: CallbackQuery, button: Button, manager: DialogManager) -> None:

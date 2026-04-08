@@ -8,7 +8,8 @@ from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
-from src.infra.tg.strings import Buttons, Common, DeckManagement
+from src.core.plural import pluralize
+from src.infra.tg.strings import Buttons, Common, DeckManagement, Words
 from src.services.card import CardService
 from src.services.deck import DeckService
 
@@ -38,7 +39,8 @@ async def decks_list_getter(
     decks = await deck_service.get_decks_with_stats(user.id)
     deck_items = [
         (
-            f"{d['name']} ({d['total']} картак, {d['to_review']} да практыкі)",
+            f"{d['name']} ({d['total']} {pluralize(d['total'], *Words.CARD)},"
+            f" {d['to_review']} да практыкі)",
             str(d["id"]),
         )
         for d in decks
@@ -53,10 +55,13 @@ async def deck_view_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict
     new = stats.get("new", 0)
     due = stats.get("due", 0)
     to_review = new + due
+    total = stats.get("total", 0)
     return {
         "deck_name": deck_name,
-        "total": stats.get("total", 0),
+        "total": total,
+        "total_cards": pluralize(total, *Words.CARD),
         "new": new,
+        "new_cards": pluralize(new, *Words.CARD),
         "due": to_review,
         "has_due": to_review > 0,
     }
@@ -73,7 +78,8 @@ async def confirm_delete_deck_getter(
     data = get_dialog_data(dialog_manager)
     deck_name: str = data.get("deck_name", "")
     stats: dict[str, int] = data.get("deck_stats", {})
-    return {"deck_name": deck_name, "total": stats.get("total", 0)}
+    total = stats.get("total", 0)
+    return {"deck_name": deck_name, "total": total, "total_cards": pluralize(total, *Words.CARD)}
 
 
 CARDS_PER_PAGE = 6
