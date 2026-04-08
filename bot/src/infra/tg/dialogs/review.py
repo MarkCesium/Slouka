@@ -11,7 +11,14 @@ from src.infra.tg.strings import Buttons, Review
 from src.services.card import CardService
 from src.services.deck import DeckService
 
-from .common import get_dialog_data, get_start_data, get_user, no_decks, on_back_to_menu
+from .common import (
+    format_examples,
+    get_dialog_data,
+    get_start_data,
+    get_user,
+    no_decks,
+    on_back_to_menu,
+)
 from .states import ReviewSG
 
 
@@ -132,7 +139,7 @@ async def back_getter(
     return {
         "word": card["word"],
         "definition": card["definition"],
-        "examples": f"\n<i>{examples}</i>" if examples else "",
+        "examples": format_examples(examples) if examples else "",
     }
 
 

@@ -12,7 +12,14 @@ from src.infra.tg.strings import Buttons, Common, DeckManagement
 from src.services.card import CardService
 from src.services.deck import DeckService
 
-from .common import get_dialog_data, get_user, make_on_create_deck_name, no_decks, on_back_to_menu
+from .common import (
+    format_examples,
+    get_dialog_data,
+    get_user,
+    make_on_create_deck_name,
+    no_decks,
+    on_back_to_menu,
+)
 from .states import DeckManagementSG, ReviewSG
 
 # ── Getters ──────────────────────────────────────────────────────────────────
@@ -145,7 +152,7 @@ async def card_detail_getter(
     return {
         "word": card.word,
         "definition": card.definition,
-        "examples": f"\n<i>{examples}</i>" if examples else "",
+        "examples": format_examples(examples) if examples else "",
     }
 
 

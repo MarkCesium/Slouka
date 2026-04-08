@@ -73,3 +73,8 @@ def make_on_create_deck_name(
         await manager.switch_to(target_state)  # pyright: ignore[reportUnknownMemberType]
 
     return on_create_deck_name
+
+
+def format_examples(examples: str) -> str:
+    lines = [ex for ex in examples.split("\n") if ex]
+    return "\n" + "\n".join(f"<blockquote><i>{ex}</i></blockquote>" for ex in lines)

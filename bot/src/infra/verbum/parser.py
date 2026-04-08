@@ -570,7 +570,7 @@ def format_card_for_telegram(card: ParsedCard) -> str:
         prefix = f"<b>{d.number}.</b> " if d.number else ""
         parts.append(f"{prefix}{_escape(d.text)}")
         for ex in d.examples:
-            parts.append(f"    <i>{_escape(ex)}</i>")
+            parts.append(f"<blockquote><i>{_escape(ex)}</i></blockquote>")
 
     if card.phrases:
         parts.append("")
