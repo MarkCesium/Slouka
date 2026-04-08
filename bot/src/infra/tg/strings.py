@@ -167,7 +167,7 @@ class Stats:
     WEEKDAYS = ["Пн", "Аў", "Ср", "Чц", "Пт", "Сб", "Нд"]
     TITLE = "<b>📊 Статыстыка</b>\n"
     WEEK_COUNT = "📅 За тыдзень: {week} {week_cards}"
-    MONTH_COUNT = "📅 За месяц: {month} {month_cards}"
+    MONTH_COUNT = "📅 За месяц: {month_count} {month_cards}"
     STREAK_INFO = "🔥 Серыя: {streak} {streak_days} (рэкорд: {longest} {longest_days})"
     DECK_STATS_TITLE = "<b>📚 Прагрэс па калодках</b>\n"
     NO_DECKS = "\nЯшчэ няма калодак."
