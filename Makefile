@@ -1,4 +1,4 @@
-.PHONY: dev prod down logs migration migrate test lint format migrate-down
+.PHONY: dev prod dev-down prod-down logs migration migrate test lint format migrate-down
 
 dev:
 	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up --build
@@ -6,8 +6,11 @@ dev:
 prod:
 	docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d --build
 
-down:
-	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml -f docker-compose.prod.yaml down
+dev-down:
+	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml down
+
+prod-down:
+	docker compose -f docker-compose.yaml -f docker-compose.prod.yaml down
 
 logs:
 	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml logs -f
