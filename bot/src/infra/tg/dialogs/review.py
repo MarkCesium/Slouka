@@ -13,6 +13,7 @@ from src.core.plural import pluralize
 from src.infra.tg.strings import Buttons, Review, Words
 from src.services.card import CardService
 from src.services.deck import DeckService
+from src.services.stats import StatsService
 from src.services.user import UserService
 
 from .common import (
@@ -181,11 +182,20 @@ def _make_rate_handler(quality: int):  # type: ignore[no-untyped-def]
         manager: DialogManager,
         card_service: FromDishka[CardService],
         user_service: FromDishka[UserService],
+        stats_service: FromDishka[StatsService],
     ) -> None:
-        await _rate_card(manager, card_service, quality=quality)
+        # Log review BEFORE _rate_card (which increments card_index)
         data = get_dialog_data(manager)
+        card_ids: list[int] = data.get("card_ids", [])
+        index: int = data.get("card_index", 0)
+        user = get_user(manager)
+
+        if user and index < len(card_ids):
+            await stats_service.log_review(user.id, card_ids[index], quality)
+
+        await _rate_card(manager, card_service, quality=quality)
+
         if data.get("card_index", 0) >= len(data.get("card_ids", [])):
-            user = get_user(manager)
             if user:
                 today = datetime.now(ZoneInfo(user.timezone)).date()
                 await user_service.update_streak(user.id, today)

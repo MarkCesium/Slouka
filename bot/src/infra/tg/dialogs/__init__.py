@@ -7,6 +7,7 @@ from .main_menu import main_menu_dialog
 from .onboarding import onboarding_dialog
 from .review import review_dialog
 from .settings import settings_dialog
+from .stats import stats_dialog
 
 
 def get_dialogs_router() -> Router:
@@ -17,5 +18,6 @@ def get_dialogs_router() -> Router:
     router.include_router(card_display_dialog)
     router.include_router(deck_management_dialog)
     router.include_router(review_dialog)
+    router.include_router(stats_dialog)
     router.include_router(settings_dialog)
     return router

@@ -11,6 +11,7 @@ from src.infra.verbum.parser import VerbumParser
 from src.services.card import CardService
 from src.services.deck import DeckService
 from src.services.notification import NotificationService
+from src.services.stats import StatsService
 from src.services.user import UserService
 from src.services.verbum import VerbumService
 
@@ -55,3 +56,7 @@ class ServiceProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def provide_notification_service(self, uow: UnitOfWork) -> NotificationService:
         return NotificationService(uow)
+
+    @provide(scope=Scope.REQUEST)
+    def provide_stats_service(self, uow: UnitOfWork) -> StatsService:
+        return StatsService(uow)

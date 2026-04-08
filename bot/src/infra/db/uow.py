@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.infra.db.repositories.card import CardRepository
 from src.infra.db.repositories.deck import DeckRepository
+from src.infra.db.repositories.review_log import ReviewLogRepository
 from src.infra.db.repositories.user import UserRepository
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ class UnitOfWork(AbstractAsyncContextManager["UnitOfWork"]):
     users: UserRepository
     decks: DeckRepository
     cards: CardRepository
+    review_logs: ReviewLogRepository
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self.session_factory = session_factory
@@ -32,6 +34,7 @@ class UnitOfWork(AbstractAsyncContextManager["UnitOfWork"]):
         self.users = UserRepository(self.session)
         self.decks = DeckRepository(self.session)
         self.cards = CardRepository(self.session)
+        self.review_logs = ReviewLogRepository(self.session)
         return self
 
     async def commit(self) -> None:

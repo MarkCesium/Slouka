@@ -7,6 +7,7 @@ class Words:
     DAY = ("дзень", "дні", "дзён")
     CARD = ("картка", "карткі", "картак")
     CARD_ACC = ("картку", "карткі", "картак")
+    REVIEW = ("паўтарэнне", "паўтарэнні", "паўтарэнняў")
 
 
 class Buttons:
@@ -33,6 +34,7 @@ class MainMenu:
     SEARCH = "🔍 Пошук слова"
     DECKS = "📚 Мае калодкі"
     PRACTICE = "🧠 Практыка"
+    STATS = "📊 Статыстыка"
     SETTINGS = "⚙️ Налады"
 
 
@@ -145,6 +147,38 @@ class Settings:
     TZ_DETECT_FAILED = "Не ўдалося вызначыць часавы пояс. Паспрабуйце пошук па горадзе."
     TZ_LOCATION_RECEIVED = "📍 Месцазнаходжанне атрымана!"
     TZ_SEARCH_NO_RESULTS = "Нічога не знойдзена. Паспрабуйце яшчэ раз."
+
+
+class Stats:
+    MONTHS = [
+        "Студзень",
+        "Люты",
+        "Сакавік",
+        "Красавік",
+        "Травень",
+        "Чэрвень",
+        "Ліпень",
+        "Жнівень",
+        "Верасень",
+        "Кастрычнік",
+        "Лістапад",
+        "Снежань",
+    ]
+    WEEKDAYS = ["Пн", "Аў", "Ср", "Чц", "Пт", "Сб", "Нд"]
+    TITLE = "<b>📊 Статыстыка</b>\n"
+    WEEK_COUNT = "📅 За тыдзень: {week} {week_cards}"
+    MONTH_COUNT = "📅 За месяц: {month} {month_cards}"
+    STREAK_INFO = "🔥 Серыя: {streak} {streak_days} (рэкорд: {longest} {longest_days})"
+    DECK_STATS_TITLE = "<b>📚 Прагрэс па калодках</b>\n"
+    NO_DECKS = "\nЯшчэ няма калодак."
+    EASE_TITLE = "\n<b>Размеркаванне складанасці</b>\n"
+    EASE_EASY = "🟢 Лёгкія: {easy}"
+    EASE_MEDIUM = "🟡 Сярэднія: {medium}"
+    EASE_HARD = "🔴 Складаныя: {hard}"
+    NO_REVIEWS = "\nЯшчэ не было практыкі."
+    PREV_MONTH = "←"
+    NEXT_MONTH = "→"
+    DECK_STATS_BTN = "📚 Па калодках"
 
 
 class Notifications:

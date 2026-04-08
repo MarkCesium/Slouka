@@ -42,6 +42,11 @@ class ReviewSG(StatesGroup):
     session_complete = State()
 
 
+class StatsSG(StatesGroup):
+    overview = State()
+    decks = State()
+
+
 class SettingsSG(StatesGroup):
     main = State()
     select_hour = State()
