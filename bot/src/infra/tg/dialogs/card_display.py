@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
@@ -12,6 +14,7 @@ from src.infra.schemas.verbum import ParsedCard
 from src.infra.tg.strings import Buttons, CardDisplay, Common
 from src.services.card import CardService
 from src.services.deck import DeckService
+from src.services.user import UserService
 
 from .common import (
     get_dialog_data,
@@ -49,6 +52,7 @@ async def on_deck_selected(
     manager: DialogManager,
     item_id: str,
     card_service: FromDishka[CardService],
+    user_service: FromDishka[UserService],
 ) -> None:
     deck_id = int(item_id)
     user = get_user(manager)
@@ -71,6 +75,9 @@ async def on_deck_selected(
             show_alert=True,
         )
         return
+
+    today = datetime.now(ZoneInfo(user.timezone)).date()
+    await user_service.update_streak(user.id, today)
 
     data = get_dialog_data(manager)
     data["added_word"] = parsed_card.headword

@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from zoneinfo import available_timezones
 
 from src.core.exceptions import EntityNotFoundError
@@ -44,3 +45,26 @@ class UserService:
             raise ValueError(f"Invalid timezone: {timezone}")
         async with self._uow:
             await self._uow.users.update(user_id, timezone=timezone)
+
+    async def update_streak(self, user_id: int, today: date) -> int:
+        async with self._uow:
+            user = await self._uow.users.get_by_id(user_id)
+            if user is None:
+                raise EntityNotFoundError(f"User {user_id} not found")
+
+            if user.last_activity_date == today:
+                return user.current_streak
+
+            if user.last_activity_date == today - timedelta(days=1):
+                new_streak = user.current_streak + 1
+            else:
+                new_streak = 1
+
+            longest = max(user.longest_streak, new_streak)
+            await self._uow.users.update(
+                user_id,
+                current_streak=new_streak,
+                longest_streak=longest,
+                last_activity_date=today,
+            )
+            return new_streak

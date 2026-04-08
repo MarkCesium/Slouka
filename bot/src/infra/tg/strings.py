@@ -21,6 +21,7 @@ class Common:
 
 class MainMenu:
     TITLE = "<b>Галоўнае меню</b>\n\nШто б вы хацелі зрабіць?"
+    STREAK = "\n🔥 Серыя: {streak} дз."
     SEARCH = "🔍 Пошук слова"
     DECKS = "📚 Мае калодкі"
     PRACTICE = "🧠 Практыка"

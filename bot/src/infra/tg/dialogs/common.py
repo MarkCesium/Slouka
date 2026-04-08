@@ -75,6 +75,10 @@ def make_on_create_deck_name(
     return on_create_deck_name
 
 
+def has_streak(data: dict[str, Any], *_: Any) -> bool:
+    return bool(data.get("streak", 0))
+
+
 def format_examples(examples: str) -> str:
     lines = [ex for ex in examples.split("\n") if ex]
     return "\n" + "\n".join(f"<blockquote><i>{ex}</i></blockquote>" for ex in lines)

@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
@@ -10,6 +12,7 @@ from dishka.integrations.aiogram_dialog import inject
 from src.infra.tg.strings import Buttons, Review
 from src.services.card import CardService
 from src.services.deck import DeckService
+from src.services.user import UserService
 
 from .common import (
     format_examples,
@@ -176,8 +179,15 @@ def _make_rate_handler(quality: int):  # type: ignore[no-untyped-def]
         button: Button,
         manager: DialogManager,
         card_service: FromDishka[CardService],
+        user_service: FromDishka[UserService],
     ) -> None:
         await _rate_card(manager, card_service, quality=quality)
+        data = get_dialog_data(manager)
+        if data.get("card_index", 0) >= len(data.get("card_ids", [])):
+            user = get_user(manager)
+            if user:
+                today = datetime.now(ZoneInfo(user.timezone)).date()
+                await user_service.update_streak(user.id, today)
 
     return handler
 

@@ -1,6 +1,7 @@
+from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, Integer, String
+from sqlalchemy import BigInteger, Boolean, Date, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -24,4 +25,7 @@ class User(Base):
     timezone: Mapped[str] = mapped_column(
         String(50), default="Europe/Minsk", server_default="Europe/Minsk"
     )
+    current_streak: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    longest_streak: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    last_activity_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     decks: Mapped[list[Deck]] = relationship("Deck", back_populates="user")
