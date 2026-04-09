@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.widgets.kbd import Button, Group, Row, Select
+from aiogram_dialog.widgets.kbd import Button, Group, Row, ScrollingGroup, Select
 from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
@@ -219,12 +219,17 @@ async def complete_getter(dialog_manager: DialogManager, **kwargs: Any) -> dict[
 review_dialog = Dialog(
     Window(
         Const(Review.SELECT_DECK),
-        Select(
-            Format("{item[0]}"),
-            id="review_deck",
-            item_id_getter=lambda item: item[1],
-            items="decks",
-            on_click=on_review_deck_selected,  # pyright: ignore[reportArgumentType]
+        ScrollingGroup(
+            Select(
+                Format("{item[0]}"),
+                id="review_deck",
+                item_id_getter=lambda item: item[1],
+                items="decks",
+                on_click=on_review_deck_selected,  # pyright: ignore[reportArgumentType]
+            ),
+            width=1,
+            height=5,
+            id="review_deck_scroll",
         ),
         Const(
             Review.NO_DECKS,
