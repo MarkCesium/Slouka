@@ -2,24 +2,24 @@ from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.activity import ActivityType
 from src.infra.db.uow import UnitOfWork
 from src.services.stats import StatsService
 
 from .conftest import create_card, create_deck, create_user
 
 
-async def test_log_review_creates_record(uow: UnitOfWork, session: AsyncSession) -> None:
+async def test_log_activity_creates_record(uow: UnitOfWork, session: AsyncSession) -> None:
     user = await create_user(session)
     deck = await create_deck(session, user_id=user.id)
     card = await create_card(session, deck_id=deck.id)
     await session.commit()
 
     service = StatsService(uow)
-    await service.log_review(user.id, card.id, quality=4)
+    await service.log_activity(user.id, card.id, ActivityType.REVIEW, quality=4)
 
-    # Verify via repo
     async with uow:
-        count = await uow.review_logs.count_reviews_in_range(
+        count = await uow.activity_logs.count_reviews_in_range(
             user.id,
             datetime(2020, 1, 1, tzinfo=UTC),
             datetime(2030, 1, 1, tzinfo=UTC),
@@ -31,7 +31,6 @@ async def test_get_deck_learned_stats(uow: UnitOfWork, session: AsyncSession) ->
     user = await create_user(session)
     deck = await create_deck(session, user_id=user.id, name="Animals")
 
-    # 2 learned cards, 1 new
     await create_card(session, deck_id=deck.id, word="кот", is_new=False, repetitions=3)
     await create_card(session, deck_id=deck.id, word="сабака", is_new=False, repetitions=1)
     await create_card(session, deck_id=deck.id, word="птушка", is_new=True, repetitions=0)
@@ -51,7 +50,6 @@ async def test_get_ease_distribution(uow: UnitOfWork, session: AsyncSession) -> 
     user = await create_user(session)
     deck = await create_deck(session, user_id=user.id)
 
-    # hard (EF < 2.0)
     await create_card(
         session,
         deck_id=deck.id,
@@ -60,7 +58,6 @@ async def test_get_ease_distribution(uow: UnitOfWork, session: AsyncSession) -> 
         ease_factor=1.5,
         repetitions=1,
     )
-    # medium (2.0 <= EF < 2.5)
     await create_card(
         session,
         deck_id=deck.id,
@@ -69,7 +66,6 @@ async def test_get_ease_distribution(uow: UnitOfWork, session: AsyncSession) -> 
         ease_factor=2.2,
         repetitions=1,
     )
-    # easy (EF >= 2.5)
     await create_card(
         session,
         deck_id=deck.id,
@@ -78,7 +74,6 @@ async def test_get_ease_distribution(uow: UnitOfWork, session: AsyncSession) -> 
         ease_factor=2.8,
         repetitions=1,
     )
-    # new card — should be excluded
     await create_card(
         session,
         deck_id=deck.id,

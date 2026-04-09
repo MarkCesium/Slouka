@@ -11,10 +11,11 @@ from sqlalchemy.ext.asyncio import (
 )
 from testcontainers.postgres import PostgresContainer
 
-from src.infra.db.models import Base, Card, Deck, ReviewLog, User
+from src.core.activity import ActivityType
+from src.infra.db.models import ActivityLog, Base, Card, Deck, User
 from src.infra.db.uow import UnitOfWork
 
-TRUNCATE = text("TRUNCATE TABLE review_logs, cards, decks, users RESTART IDENTITY CASCADE")
+TRUNCATE = text("TRUNCATE TABLE activity_logs, cards, decks, users RESTART IDENTITY CASCADE")
 
 
 @pytest.fixture(scope="session")
@@ -133,21 +134,23 @@ async def create_card(
     return card
 
 
-async def create_review_log(
+async def create_activity_log(
     session: AsyncSession,
     *,
     user_id: int,
     card_id: int,
-    quality: int = 4,
-    reviewed_at: datetime | None = None,
-) -> ReviewLog:
-    if reviewed_at is None:
-        reviewed_at = datetime.now(UTC)
-    log = ReviewLog(
+    activity_type: str = ActivityType.REVIEW,
+    quality: int | None = 4,
+    created_at: datetime | None = None,
+) -> ActivityLog:
+    if created_at is None:
+        created_at = datetime.now(UTC)
+    log = ActivityLog(
         user_id=user_id,
         card_id=card_id,
+        activity_type=activity_type,
         quality=quality,
-        reviewed_at=reviewed_at,
+        created_at=created_at,
     )
     session.add(log)
     await session.flush()

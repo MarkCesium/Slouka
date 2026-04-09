@@ -53,6 +53,7 @@ async def overview_getter(
     has_reviews = counts["week"] > 0 or counts["month"] > 0
     streak = user.current_streak
     longest = user.longest_streak
+    streak_active_today = user.last_activity_date == today_local
 
     return {
         "calendar_weeks": calendar_weeks,
@@ -67,6 +68,8 @@ async def overview_getter(
         "longest_days": pluralize(longest, *Words.DAY),
         "has_reviews": has_reviews,
         "has_streak": streak > 0,
+        "streak_active_today": streak_active_today,
+        "streak_at_risk": streak > 0 and not streak_active_today,
         "prev_month_label": Stats.MONTHS[prev_m - 1],
         "next_month_label": Stats.MONTHS[next_m - 1],
     }
@@ -164,7 +167,8 @@ stats_dialog = Dialog(
             Button(Const(Stats.PREV_MONTH), id="prev_m", on_click=on_prev_month),
             Button(Const(Stats.NEXT_MONTH), id="next_m", on_click=on_next_month),
         ),
-        Format(Stats.STREAK_INFO, when="has_streak"),
+        Format(Stats.STREAK_INFO, when="streak_active_today"),
+        Format(Stats.STREAK_INFO_WARNING, when="streak_at_risk"),
         Format(Stats.WEEK_COUNT, when="has_reviews"),
         Format(Stats.MONTH_COUNT, when="has_reviews"),
         Const(Stats.NO_REVIEWS, when=no_reviews),

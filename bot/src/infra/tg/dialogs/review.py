@@ -9,6 +9,7 @@ from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
+from src.core.activity import ActivityType
 from src.core.plural import pluralize
 from src.infra.tg.strings import Buttons, Review, Words
 from src.services.card import CardService
@@ -191,7 +192,7 @@ def _make_rate_handler(quality: int):  # type: ignore[no-untyped-def]
         user = get_user(manager)
 
         if user and index < len(card_ids):
-            await stats_service.log_review(user.id, card_ids[index], quality)
+            await stats_service.log_activity(user.id, card_ids[index], ActivityType.REVIEW, quality)
 
         await _rate_card(manager, card_service, quality=quality)
 

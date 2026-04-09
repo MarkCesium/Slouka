@@ -10,10 +10,12 @@ from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
 
+from src.core.activity import ActivityType
 from src.infra.schemas.verbum import ParsedCard
 from src.infra.tg.strings import Buttons, CardDisplay, Common
 from src.services.card import CardService
 from src.services.deck import DeckService
+from src.services.stats import StatsService
 from src.services.user import UserService
 
 from .common import (
@@ -53,6 +55,7 @@ async def on_deck_selected(
     item_id: str,
     card_service: FromDishka[CardService],
     user_service: FromDishka[UserService],
+    stats_service: FromDishka[StatsService],
 ) -> None:
     deck_id = int(item_id)
     user = get_user(manager)
@@ -75,6 +78,8 @@ async def on_deck_selected(
             show_alert=True,
         )
         return
+
+    await stats_service.log_activity(user.id, result.id, ActivityType.CARD_ADDED)
 
     today = datetime.now(ZoneInfo(user.timezone)).date()
     await user_service.update_streak(user.id, today)

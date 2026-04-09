@@ -31,6 +31,7 @@ class Common:
 class MainMenu:
     TITLE = "<b>Галоўнае меню</b>\n\nШто б вы хацелі зрабіць?"
     STREAK = "\n🔥 Серыя: {streak} {streak_days}"
+    STREAK_WARNING = "\n🔶 Серыя: {streak} {streak_days}"
     SEARCH = "🔍 Пошук слова"
     DECKS = "📚 Мае калодкі"
     PRACTICE = "🧠 Практыка"
@@ -169,6 +170,7 @@ class Stats:
     WEEK_COUNT = "📅 За тыдзень: {week} {week_cards}"
     MONTH_COUNT = "📅 За месяц: {month_count} {month_cards}"
     STREAK_INFO = "🔥 Серыя: {streak} {streak_days} (рэкорд: {longest} {longest_days})"
+    STREAK_INFO_WARNING = "🔶 Серыя: {streak} {streak_days} (рэкорд: {longest} {longest_days})"
     DECK_STATS_TITLE = "<b>📚 Прагрэс па калодках</b>\n"
     NO_DECKS = "\nЯшчэ няма калодак."
     EASE_TITLE = "\n<b>Размеркаванне складанасці</b>\n"

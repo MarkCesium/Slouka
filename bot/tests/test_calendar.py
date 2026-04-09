@@ -69,6 +69,16 @@ def test_past_inactive_days() -> None:
     assert day_3.marker == MARKER_INACTIVE
 
 
+def test_today_active_shows_fire_not_warning() -> None:
+    """If today is in active_days, show fire even with streak."""
+    weeks = build_calendar_days(
+        2026, 4, active_days={10}, user_today=date(2026, 4, 10), has_streak=True
+    )
+    all_days = [d for week in weeks for d in week if not d.is_padding]
+    day_10 = next(d for d in all_days if d.day == 10)
+    assert day_10.marker == MARKER_FIRE
+
+
 def test_seven_columns_per_week() -> None:
     weeks = build_calendar_days(
         2026, 4, active_days=set(), user_today=date(2026, 4, 1), has_streak=False
