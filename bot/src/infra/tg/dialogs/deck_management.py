@@ -3,7 +3,7 @@ from typing import Any
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Button, Group, Row, Select, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, Group, Row, ScrollingGroup, Select, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
@@ -327,12 +327,17 @@ deck_management_dialog = Dialog(
     # ── List decks ───────────────────────────────────────────────────────
     Window(
         Const(DeckManagement.MY_DECKS),
-        Select(
-            Format("{item[0]}"),
-            id="deck_list",
-            item_id_getter=lambda item: item[1],
-            items="decks",
-            on_click=on_deck_selected,  # pyright: ignore[reportArgumentType]
+        ScrollingGroup(
+            Select(
+                Format("{item[0]}"),
+                id="deck_list",
+                item_id_getter=lambda item: item[1],
+                items="decks",
+                on_click=on_deck_selected,  # pyright: ignore[reportArgumentType]
+            ),
+            width=1,
+            height=5,
+            id="deck_list_scroll",
         ),
         Const(
             Common.NO_DECKS,

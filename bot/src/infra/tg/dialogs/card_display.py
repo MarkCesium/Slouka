@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Button, Select, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, ScrollingGroup, Select, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
 from dishka import FromDishka
 from dishka.integrations.aiogram_dialog import inject
@@ -105,12 +105,17 @@ async def on_done(callback: CallbackQuery, button: Button, manager: DialogManage
 card_display_dialog = Dialog(
     Window(
         Const(CardDisplay.SELECT_DECK),
-        Select(
-            Format("{item[0]}"),
-            id="deck_select",
-            item_id_getter=lambda item: item[1],
-            items="decks",
-            on_click=on_deck_selected,  # pyright: ignore[reportArgumentType]
+        ScrollingGroup(
+            Select(
+                Format("{item[0]}"),
+                id="deck_select",
+                item_id_getter=lambda item: item[1],
+                items="decks",
+                on_click=on_deck_selected,  # pyright: ignore[reportArgumentType]
+            ),
+            width=1,
+            height=5,
+            id="deck_select_scroll",
         ),
         Const(
             Common.NO_DECKS,
